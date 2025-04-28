@@ -1,0 +1,14 @@
+%YAML:1.0
+# 数据文件地址
+dataset_dir: /home/geneta/Project/00
+
+# 相机内参
+camera.fx: 517.3
+camera.fy: 516.5
+camera.cx: 325.1
+camera.cy: 249.7
+
+# 特征点提取参数
+num_features: 800  # 提取的特征点参数
+num_features_init: 50 
+num_features_tracking: 300 # 光流追踪成功所需要的点数
