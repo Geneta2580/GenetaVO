@@ -4,8 +4,6 @@
 ## 环境主要配置参考
 Ubuntu24.04
 
-ROS2 jazzy
-
 OpenCV 4.10.0
 
 Ceres
@@ -15,3 +13,4 @@ g2o
 Sophus
 
 以上均需安装在系统目录下
+
