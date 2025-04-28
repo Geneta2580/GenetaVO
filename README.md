@@ -15,6 +15,6 @@ g2o
 
 Sophus
 
-以上均需安装在系统目录下
+以上库均需安装在ubuntu默认系统目录下
 
 ![运行演示图](https://github.com/user-attachments/assets/f9ec1e13-c758-4a58-994e-81a41d6d8233)
