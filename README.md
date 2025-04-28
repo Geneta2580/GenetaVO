@@ -7,4 +7,3 @@ Ubuntu24.04
 ROS2 jazzy
 
 OpenCV 4.10.0
-
