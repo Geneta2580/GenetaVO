@@ -42,11 +42,7 @@ int main()
             // std::cout << "running" << std::endl;
 
             // 检查是否到达序列末尾
-<<<<<<< HEAD
             if(frame->id_ == 10) {  
-=======
-            if(frame->id_ == 270) {  
->>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
                 std::cout << "Reached end of image sequence at frame: " 
                             << frame->id_ << std::endl;
                 break;

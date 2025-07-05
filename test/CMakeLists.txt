@@ -8,17 +8,10 @@ foreach(test_src IN LISTS TEST_SOURCES)
     # 生成可执行文件
     add_executable(${test_src} ${test_src}.cpp)
     
-<<<<<<< HEAD
     # 链接依赖库 - 使用现代化的目标链接方式
     target_link_libraries(${test_src} PRIVATE 
         myslam
         third_party_deps
-=======
-    # 链接依赖库
-    target_link_libraries(${test_src} PRIVATE 
-        ${THIRD_PARTY_LIBS} 
-        myslam  # 确保myslam已通过add_subdirectory定义
->>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
     )
     
     # 注册测试用例（标准格式）
