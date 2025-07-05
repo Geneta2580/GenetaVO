@@ -36,7 +36,11 @@ namespace myslam{
             bool DetectLoop();
 
             // 对可能的回环做空间一致RANSAC检测
+<<<<<<< HEAD
             // bool RANSAC(size_t curr_id_, size_t candidate_id);
+=======
+            bool RANSAC(size_t curr_id_, size_t candidate_id);
+>>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
 
             // 候选的关键帧ID
             LoopIDType loop_id_;

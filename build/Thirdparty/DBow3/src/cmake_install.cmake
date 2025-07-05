@@ -64,6 +64,13 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "main" OR NOT CMAKE_INSTALL_COMPONENT)
       )
     if(EXISTS "${file}" AND
        NOT IS_SYMLINK "${file}")
+<<<<<<< HEAD
+=======
+      file(RPATH_CHANGE
+           FILE "${file}"
+           OLD_RPATH "/usr/local/lib:"
+           NEW_RPATH "")
+>>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
       if(CMAKE_INSTALL_DO_STRIP)
         execute_process(COMMAND "/usr/bin/strip" "${file}")
       endif()

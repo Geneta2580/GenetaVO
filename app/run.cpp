@@ -5,6 +5,7 @@
 #include "myslam/frontend.h"
 #include "myslam/config.h"
 #include "myslam/backend.h"
+<<<<<<< HEAD
 #include <glog/logging.h> // 确保 glog 头文件已包含
 
 namespace fs = std::filesystem;
@@ -18,6 +19,13 @@ int main(int argc, char **argv)
     // FLAGS_log_dir = "/dev/null";
     // FLAGS_minloglevel = google::FATAL + 1;
 
+=======
+
+namespace fs = std::filesystem;
+
+int main()
+{
+>>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
     try {
         const std::string config_file_path_ = "/home/geneta/Project/geneta_slam/config/config.yaml"; // 设置配置文件路径
         if (myslam::Config::SetParameterFile(config_file_path_) == false) { // 设置配置文件
@@ -53,11 +61,19 @@ int main(int argc, char **argv)
             // << " | Type: " << frame->right_img_.type() << std::endl;
 
             // 此处添加SLAM处理逻辑（示例显示图像）
+<<<<<<< HEAD
             // auto t1 = std::chrono::steady_clock::now(); // 算法计时
             frontend_.Calculate(frame); // 这里参数传进去经过操作是会改变的
             // auto t2 = std::chrono::steady_clock::now();
             // auto time_used = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
             // std::cout << "GenetaSLAM Frontend cost time: " << time_used.count() << " seconds." << std::endl;
+=======
+            auto t1 = std::chrono::steady_clock::now(); // 算法计时
+            frontend_.Calculate(frame); // 这里参数传进去经过操作是会改变的
+            auto t2 = std::chrono::steady_clock::now();
+            auto time_used = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+            std::cout << "GenetaSLAM Frontend cost time: " << time_used.count() << " seconds." << std::endl;
+>>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
 
             // cv::imshow("SLAM Left Frame Preview", frame->left_img_); // 注意imshow多线程竞争问题
             // cv::imshow("SLAM Right Frame Preview", frame->right_img_);

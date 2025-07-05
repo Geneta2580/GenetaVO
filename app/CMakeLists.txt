@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 定义可执行文件
 add_executable(GenetaSLAM run.cpp)
 
@@ -8,3 +9,9 @@ target_link_libraries(GenetaSLAM
     myslam
     third_party_deps
 )
+=======
+# 测试可执行文件
+add_executable(GenetaSLAM run.cpp) 
+
+target_link_libraries(GenetaSLAM myslam ${THIRD_PARTY_LIBS})
+>>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b

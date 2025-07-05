@@ -9,6 +9,12 @@ camera.cx: 325.1
 camera.cy: 249.7
 
 # 特征点提取参数
+<<<<<<< HEAD
 num_features: 1000  # 提取的特征点参数
 num_features_init: 50 
 num_features_tracking: 400 # 光流追踪成功所需要的点数
+=======
+num_features: 800  # 提取的特征点参数
+num_features_init: 50 
+num_features_tracking: 300 # 光流追踪成功所需要的点数
+>>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
