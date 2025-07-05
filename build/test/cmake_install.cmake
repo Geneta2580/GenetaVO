@@ -12,11 +12,7 @@ if(NOT DEFINED CMAKE_INSTALL_CONFIG_NAME)
     string(REGEX REPLACE "^[^A-Za-z0-9_]+" ""
            CMAKE_INSTALL_CONFIG_NAME "${BUILD_TYPE}")
   else()
-<<<<<<< HEAD
     set(CMAKE_INSTALL_CONFIG_NAME "release")
-=======
-    set(CMAKE_INSTALL_CONFIG_NAME "Release")
->>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
   endif()
   message(STATUS "Install configuration: \"${CMAKE_INSTALL_CONFIG_NAME}\"")
 endif()

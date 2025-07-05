@@ -11,11 +11,7 @@ Thirdparty/DBow3/src/CMakeFiles/DBoW3.dir/quicklz.c.o: \
  /usr/include/x86_64-linux-gnu/bits/long-double.h \
  /usr/include/x86_64-linux-gnu/gnu/stubs.h \
  /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
-<<<<<<< HEAD
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stddef.h \
-=======
- /usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h \
->>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
  /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
  /usr/include/strings.h \

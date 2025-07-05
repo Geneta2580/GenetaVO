@@ -38,13 +38,8 @@ namespace myslam {
     }
     
     bool Frontend::Init() {
-<<<<<<< HEAD
         loop_->SetBackend(backend_);
         backend_->SetLoopclosing(loop_); // 回环和后端线程相互连接，方便传输回环数据
-=======
-        // loop_->SetBackend(backend_);
-        // backend_->SetLoopclosing(loop_); // 回环和后端线程相互连接，方便传输回环数据
->>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
 
         camera_left_->fx_ = myslam::Config::Get<double>("camera.fx"); // 设置左相机内参
         camera_left_->fy_ = myslam::Config::Get<double>("camera.fy");
@@ -59,11 +54,7 @@ namespace myslam {
         SE3 init_left_pose = Sophus::SE3d();
         Sophus::SE3d translation_transform(
             Sophus::SO3d(), 
-<<<<<<< HEAD
             Eigen::Vector3d(0.537166, 0.0, 0.0) // 左右目距离为0.537166
-=======
-            Eigen::Vector3d(0.54, 0.0, 0.0) // 左右目距离为0.54m
->>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
         );
         Sophus::SE3d init_right_pose = init_left_pose * translation_transform;
 
@@ -79,13 +70,8 @@ namespace myslam {
 
             current_frame_->SetKeyFrame(); // 设第一帧为关键帧
 
-<<<<<<< HEAD
             loop_->SetMap(map_); // 将地图传输给回环
             loop_->Wake(); // 激活回环检测
-=======
-            // loop_->SetMap(map_); // 将地图传输给回环
-            // loop_->Wake(); // 激活回环检测
->>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
 
             backend_->SetCameras(camera_left_, camera_right_); // 将相机左右的位姿（实际上只要左右相对的位姿即可）赋给空指针
             
@@ -294,15 +280,12 @@ namespace myslam {
             }
         }
     
-<<<<<<< HEAD
         // --- 最终修复：在优化前检查是否有边被添加 ---
         if (edges.empty()) {
             // 如果没有边，意味着当前帧没有观测到任何地图点，优化无意义
             return 0;
         }
 
-=======
->>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
         // 开始进行位姿的BA优化
         const double chi2_th = 5.991;
         int cnt_outlier = 0;
@@ -466,13 +449,8 @@ namespace myslam {
         // std::cout << "keyframe id:" << current_frame_->keyframe_id_ << std::endl; // 测试用检查关键帧id
         // std::cout << "frame id:" << current_frame_->id_ << std::endl; // 测试用检查帧id
 
-<<<<<<< HEAD
         loop_->SetMap(map_); // 将地图传输给回环，回环需要地图历史帧
         loop_->Wake(); // 激活回环检测
-=======
-        // loop_->SetMap(map_); // 将地图传输给回环
-        // loop_->Wake(); // 激活回环检测
->>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
     }
 
     void Frontend::Stop() {

@@ -12,11 +12,7 @@ FOREACH(file ${files})
   MESSAGE(STATUS "Uninstalling \"$ENV{DESTDIR}${file}\"")
 #  IF(EXISTS "$ENV{DESTDIR}${file}")
 #    EXEC_PROGRAM(
-<<<<<<< HEAD
 #      "/home/geneta/project/tools/cmake-3.27.0-linux-x86_64/bin/cmake" ARGS "-E remove \"$ENV{DESTDIR}${file}\""
-=======
-#      "/usr/bin/cmake" ARGS "-E remove \"$ENV{DESTDIR}${file}\""
->>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
 #      OUTPUT_VARIABLE rm_out
 #      RETURN_VALUE rm_retval
 #      )

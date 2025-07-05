@@ -1,6 +1,2 @@
 # Hashes of file build rules.
-<<<<<<< HEAD
 5dca1c334969cd93261ea05cbca6ed9e Thirdparty/DBow3/CMakeFiles/uninstall
-=======
-4317e7eafa95704cebea75cb4c35dc67 Thirdparty/DBow3/CMakeFiles/uninstall
->>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b

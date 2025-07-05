@@ -54,11 +54,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/demo_general")
     file(RPATH_CHANGE
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/demo_general"
-<<<<<<< HEAD
          OLD_RPATH "/home/geneta/Project/geneta_slam/build/Thirdparty/DBow3/src:"
-=======
-         OLD_RPATH "/home/geneta/Project/geneta_slam/build/Thirdparty/DBow3/src:/usr/local/lib:"
->>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
          NEW_RPATH "")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/demo_general")
@@ -78,11 +74,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/create_voc_step0")
     file(RPATH_CHANGE
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/create_voc_step0"
-<<<<<<< HEAD
          OLD_RPATH "/home/geneta/Project/geneta_slam/build/Thirdparty/DBow3/src:"
-=======
-         OLD_RPATH "/home/geneta/Project/geneta_slam/build/Thirdparty/DBow3/src:/usr/local/lib:"
->>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
          NEW_RPATH "")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/create_voc_step0")
@@ -102,11 +94,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/create_voc_step1")
     file(RPATH_CHANGE
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/create_voc_step1"
-<<<<<<< HEAD
          OLD_RPATH "/home/geneta/Project/geneta_slam/build/Thirdparty/DBow3/src:"
-=======
-         OLD_RPATH "/home/geneta/Project/geneta_slam/build/Thirdparty/DBow3/src:/usr/local/lib:"
->>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
          NEW_RPATH "")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/usr/bin/strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/create_voc_step1")

@@ -142,15 +142,12 @@ namespace myslam {
         //     last_loop_size_ = loop_->loop_id_.size();
         // }
 
-<<<<<<< HEAD
         // --- 关键修复：在优化前检查图是否为空 ---
         if (optimizer.vertices().empty()) {
             // 图是空的，没有可优化的内容，直接返回，避免产生警告
             return;
         }
 
-=======
->>>>>>> 723770ab0906c835a1ea9745461e7ef4041be37b
         // do optimization and eliminate the outliers
         optimizer.initializeOptimization();
         optimizer.optimize(10);
