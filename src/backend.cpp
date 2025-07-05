@@ -35,6 +35,11 @@ namespace myslam {
             Map::KeyframesType active_kfs = map_->GetActiveKeyFrames();
             Map::LandmarksType active_landmarks = map_->GetActiveMapPoints();
             
+            // 优化触发条件：地图中的关键帧数量需要足够多
+            if (active_kfs.size() < 2) {
+                continue; 
+            }
+
             Optimize(active_kfs, active_landmarks); // 优化函数
         }
     }
@@ -43,7 +48,7 @@ namespace myslam {
                            Map::LandmarksType &landmarks) {
         // setup g2o
         typedef g2o::BlockSolver_6_3 BlockSolverType;
-        typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType; // 线性求解器类型
+        typedef g2o::LinearSolverCSparse<BlockSolverType::PoseMatrixType> LinearSolverType; // 必须使用稀疏求解器
 
         auto solver = new g2o::OptimizationAlgorithmLevenberg( // 设置优化算法，求解器
             std::make_unique<BlockSolverType>(std::make_unique<LinearSolverType>()));
@@ -142,9 +147,9 @@ namespace myslam {
         //     last_loop_size_ = loop_->loop_id_.size();
         // }
 
-        // --- 关键修复：在优化前检查图是否为空 ---
-        if (optimizer.vertices().empty()) {
-            // 图是空的，没有可优化的内容，直接返回，避免产生警告
+        // --- 关键修复：在优化前检查图是否有边 ---
+        if (optimizer.edges().empty()) {
+            // 图中没有边，没有可优化的内容，直接返回
             return;
         }
 

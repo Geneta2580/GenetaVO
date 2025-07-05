@@ -94,7 +94,7 @@ namespace myslam {
         // fast->setNonmaxSuppression(true);
 
         // 这个是ORB检测
-        cv::Ptr<cv::ORB> orb = cv::ORB::create(num_features_, 1.2, 8);
+        cv::Ptr<cv::ORB> orb = cv::ORB::create(num_features_*4, 1.2, 8);
 
         // 对图像进行直方图均衡化增强，提升特征点检测效果
         cv::Mat enhanced_img;
@@ -107,39 +107,46 @@ namespace myslam {
         // gftt->detect(current_frame_->left_img_, keypoints); // 将提取到的特征点注入到对应帧的类参数当中去
         // fast->detect(current_frame_->left_img_, keypoints); // FAST
 
-        // // --- 使用非极大值抑制（NMS）替代四叉树 ---
-        // std::vector<cv::Point2f> keypoints_for_nms;
-        // std::vector<float> responses;
-        // for (const auto& kp : all_keypoints) {
-        //     keypoints_for_nms.push_back(kp.pt);
-        //     responses.push_back(kp.response);
-        // }
+        // --- 使用网格化筛选策略以保证特征点分布均匀 ---
+        const int grid_size = 20; // 网格单元的像素大小
+        const int grid_cols = current_frame_->left_img_.cols / grid_size;
+        const int grid_rows = current_frame_->left_img_.rows / grid_size;
 
-        // std::vector<int> indices;
-        // const float nms_threshold = 0.5f; // NMS 阈值，可以调整
-        // const int top_k = num_features_;  // 最终保留的特征点数量
-        // cv::dnn::NMSBoxes(
-        //     std::vector<cv::Rect2d>(keypoints_for_nms.begin(), keypoints_for_nms.end()),
-        //     responses,
-        //     nms_threshold,
-        //     top_k,
-        //     indices
-        // );
+        // 创建网格，每个单元存储响应最强的关键点
+        // 使用指针避免不必要的KeyPoint对象拷贝
+        std::vector<std::vector<const cv::KeyPoint*>> grid(grid_rows, std::vector<const cv::KeyPoint*>(grid_cols, nullptr));
 
-        // std::vector<cv::KeyPoint> final_keypoints;
-        // final_keypoints.reserve(indices.size());
-        // for (int idx : indices) {
-        //     final_keypoints.push_back(all_keypoints[idx]);
-        // }
-        // // --- 非极大值抑制结束 ---
+        for (const auto& kp : all_keypoints) {
+            int row = static_cast<int>(kp.pt.y / grid_size);
+            int col = static_cast<int>(kp.pt.x / grid_size);
+
+            // 确保索引在有效范围内
+            if (row >= 0 && row < grid_rows && col >= 0 && col < grid_cols) {
+                if (grid[row][col] == nullptr || kp.response > grid[row][col]->response) {
+                    grid[row][col] = &kp;
+                }
+            }
+        }
+
+        // 从网格中收集最终的关键点
+        std::vector<cv::KeyPoint> final_keypoints;
+        final_keypoints.reserve(grid_rows * grid_cols);
+        for (int row = 0; row < grid_rows; ++row) {
+            for (int col = 0; col < grid_cols; ++col) {
+                if (grid[row][col] != nullptr) {
+                    final_keypoints.push_back(*grid[row][col]);
+                }
+            }
+        }
+        // --- 网格化筛选结束 ---
 
         // 筛选后的均匀化关键点计算描述子
         cv::Mat descriptors; // ORB
-        orb->compute(current_frame_->left_img_, all_keypoints, descriptors); // ORB
+        orb->compute(current_frame_->left_img_, final_keypoints, descriptors); // ORB
         current_frame_->SetDescriptors(descriptors); // 将ORB特征描述子进行传递
         
         int cnt_detected = 0;
-        for(auto &kp: all_keypoints){
+        for(auto &kp: final_keypoints){
             current_frame_->features_left_.push_back(
                 Feature::Ptr(new Feature(current_frame_, kp)));
             cnt_detected ++;
@@ -281,7 +288,7 @@ namespace myslam {
         }
     
         // --- 最终修复：在优化前检查是否有边被添加 ---
-        if (edges.empty()) {
+        if (optimizer.edges().empty()) {
             // 如果没有边，意味着当前帧没有观测到任何地图点，优化无意义
             return 0;
         }

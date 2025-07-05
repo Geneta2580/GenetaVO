@@ -35,9 +35,6 @@ namespace myslam{
             // 对关键帧和路标点进行回环检测
             bool DetectLoop();
 
-            // 对可能的回环做空间一致RANSAC检测
-            // bool RANSAC(size_t curr_id_, size_t candidate_id);
-
             // 候选的关键帧ID
             LoopIDType loop_id_;
 
@@ -45,6 +42,8 @@ namespace myslam{
             void SetBackend(BackendPtr backend) { backend_ = backend; }
 
         private:
+            // 对可能的回环做空间一致RANSAC检测
+            bool RANSAC(size_t curr_id, size_t candidate_id);
 
             DBoW3::Vocabulary vocab_; // 持久化词汇库
             DBoW3::Database db_;       // 数据库实例

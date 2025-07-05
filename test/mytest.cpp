@@ -5,8 +5,9 @@
 #include "myslam/frontend.h"
 #include "myslam/config.h"
 #include "myslam/backend.h"
+#include <glog/logging.h>
 
-int main()
+int main(int argc, char **argv)
 {
     try {
         const std::string config_file_path_ = "/home/geneta/Project/geneta_slam/config/config.yaml"; // 设置配置文件路径

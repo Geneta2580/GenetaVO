@@ -11,12 +11,6 @@ namespace fs = std::filesystem;
 
 int main(int argc, char **argv)
 {
-    // Glog 初始化和屏蔽代码可以保持注释，因为我们已从根源解决 g2o 警告
-    // google::InitGoogleLogging(argv[0]);
-    // FLAGS_logtostderr = false;
-    // FLAGS_alsologtostderr = false;
-    // FLAGS_log_dir = "/dev/null";
-    // FLAGS_minloglevel = google::FATAL + 1;
 
     try {
         const std::string config_file_path_ = "/home/geneta/Project/geneta_slam/config/config.yaml"; // 设置配置文件路径
