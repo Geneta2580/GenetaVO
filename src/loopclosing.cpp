@@ -79,7 +79,7 @@ namespace myslam{
                                 std::unique_lock<std::shared_mutex> loop_id_lock(loop_id_mutex_);
                                 loop_id_.insert(std::make_pair(curr_kf_id, ret.Id)); // 插入回环的当前帧和候选帧关键帧ID
                                 loop_poses_.insert({curr_kf_id, estimated_pose}); // 存储该回环的相对位姿
-                                // backend_->RequestFullGraphOptimization(); // 请求后端进行全局优化
+                                backend_->RequestFullGraphOptimization(); // 请求后端进行全局优化
                                 std::cout << "当前KF的帧ID: " << curr_kf_id1 << " 可能回环的KF的帧ID: " << active_kfs[ret.Id]->id_ <<
                                 " 当前KF的ID:" << curr_kf_id << " 可能回环的KF的ID: " << ret.Id << std::endl;
                                 std::cout << "计算出的相对位姿 T_c_l: \n" << estimated_pose.matrix() << std::endl;

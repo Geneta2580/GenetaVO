@@ -12,6 +12,11 @@ namespace myslam {
         backend_thread_ = std::thread(std::bind(&Backend::BackendLoop, this)); // 启动后端优化线程
     }
     
+    void Backend::RequestFullGraphOptimization() {
+        request_full_graph_optimization_.store(true);
+        Wake(); // 唤醒后端线程以立即处理请求
+    }
+
     void Backend::Wake() {
         std::unique_lock<std::mutex> lock(data_mutex_); // 需要互斥锁
         map_update_.notify_one(); // 唤醒线程
@@ -28,8 +33,20 @@ namespace myslam {
             std::unique_lock<std::mutex> lock(data_mutex_); // 等待线程被唤醒
             map_update_.wait(lock);
 
+            // 优先处理全局优化请求
+            if (request_full_graph_optimization_.load()) {
+                request_full_graph_optimization_.store(false);
+                OptimizeFullGraph();
+                continue; // 处理完后继续下一次循环等待
+            }
+
             map_->InsertKeyFrame(new_key_frame_);
             map_->InsertMapPoint(new_map_point_);
+
+            // // 当有新的关键帧时，唤醒回环检测    万恶之源！！！！！！！！！！！！！！
+            // if (loop_) {
+            //     loop_->Wake();
+            // }
 
             /// 后端优化关键帧和地图路标点
             Map::KeyframesType active_kfs = map_->GetActiveKeyFrames();
@@ -44,6 +61,74 @@ namespace myslam {
         }
     }
     
+    void Backend::OptimizeFullGraph() {
+        std::cout << "Starting full graph optimization..." << std::endl;
+        // setup g2o
+        typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 6>> BlockSolverType;
+        typedef g2o::LinearSolverCSparse<BlockSolverType::PoseMatrixType> LinearSolverType;
+
+        auto solver = new g2o::OptimizationAlgorithmLevenberg(
+            std::make_unique<BlockSolverType>(std::make_unique<LinearSolverType>()));
+        g2o::SparseOptimizer optimizer;
+        optimizer.setAlgorithm(solver);
+        optimizer.setVerbose(false);
+
+        // 1. 添加所有关键帧作为顶点，并添加时序边
+        Map::KeyframesType all_kfs = map_->GetAllKeyFrames();
+        std::map<unsigned long, VertexPose *> vertices;
+        
+        VertexPose* prev_vertex = nullptr;
+        Frame::Ptr prev_kf = nullptr;
+
+        for (auto &kf_pair : all_kfs) {
+            auto kf = kf_pair.second;
+            VertexPose *vertex_pose = new VertexPose();
+            vertex_pose->setId(kf->keyframe_id_);
+            vertex_pose->setEstimate(kf->Pose());
+            if (kf->keyframe_id_ == 0) {
+                vertex_pose->setFixed(true);
+            }
+            optimizer.addVertex(vertex_pose);
+            vertices.insert({kf->keyframe_id_, vertex_pose});
+
+            // 添加时序边
+            if (prev_vertex != nullptr) {
+                SE3 T_relative = prev_kf->Pose().inverse() * kf->Pose();
+                
+                LoopEdge* edge = new LoopEdge();
+                edge->setVertex(0, prev_vertex);
+                edge->setVertex(1, vertex_pose);
+                edge->setMeasurement(T_relative);
+                edge->setInformation(Mat66::Identity());
+                optimizer.addEdge(edge);
+            }
+            prev_vertex = vertex_pose;
+            prev_kf = kf;
+        }
+
+        // 2. 添加所有回环约束作为边
+        auto all_loops = loop_->GetAllLoopIDs();
+        auto all_loop_poses = loop_->GetAllLoopPoses();
+        for (const auto& loop_pair : all_loops) {
+            LoopEdge *edge = new LoopEdge();
+            edge->setVertex(0, vertices.at(loop_pair.first));
+            edge->setVertex(1, vertices.at(loop_pair.second));
+            edge->setInformation(Mat66::Identity()); // 可以适当增大
+            edge->setMeasurement(all_loop_poses.at(loop_pair.first)); 
+            optimizer.addEdge(edge);
+        }
+
+        // 3. 优化
+        optimizer.initializeOptimization();
+        optimizer.optimize(20);
+
+        // 4. 更新所有关键帧的位姿
+        for (auto &v_pair : vertices) {
+            all_kfs.at(v_pair.first)->SetPose(v_pair.second->estimate());
+        }
+        std::cout << "Full graph optimization finished." << std::endl;
+    }
+
     void Backend::Optimize(Map::KeyframesType &keyframes,   // 优化后的路标点和关键帧位姿返回到变量，实现对输入的操作
                            Map::LandmarksType &landmarks) {
         // setup g2o
@@ -131,21 +216,6 @@ namespace myslam {
                     
             }
         }
-
-        // // 添加回环边
-        // if (loop_->loop_id_.size() > last_loop_size_) {
-        //     // for (const auto& [key, value] : loop_->loop_id_) {
-        //     //     std::cout << "curr id:" << key << " value: " << value << std::endl;  // 测试用
-        //     // }
-        //     auto last_loop = loop_->loop_id_.rbegin(); // 指向最后一个元素的反向迭代器
-        //     LoopEdge *edge = new LoopEdge;
-        //     edge->setVertex(0, vertices.at(last_loop->first));
-        //     edge->setVertex(1, vertices.at(last_loop->second));
-        //     edge->setInformation(Mat66::Identity());
-        //     optimizer.addEdge(edge);
-
-        //     last_loop_size_ = loop_->loop_id_.size();
-        // }
 
         // --- 关键修复：在优化前检查图是否有边 ---
         if (optimizer.edges().empty()) {

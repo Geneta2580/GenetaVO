@@ -37,6 +37,9 @@ namespace myslam {
         // 关闭后端线程
         void Stop();
 
+        // 请求一次全局位姿图优化
+        void RequestFullGraphOptimization();
+
         // 关联回环
         void SetLoopclosing(LoopclosingPtr loop) { loop_ = loop; }
 
@@ -50,6 +53,9 @@ namespace myslam {
         // 后端线程
         void BackendLoop();
 
+        // 全局位姿图优化
+        void OptimizeFullGraph();
+
         // 对给定关键帧和路标点进行优化
         void Optimize(Map::KeyframesType& keyframes, Map::LandmarksType& landmarks);
 
@@ -59,6 +65,7 @@ namespace myslam {
 
         std::condition_variable map_update_; // 满足条件时唤醒线程
         std::atomic<bool> backend_running_;
+        std::atomic<bool> request_full_graph_optimization_{false};
 
         Camera::Ptr cam_left_ = nullptr, cam_right_ = nullptr;
 
