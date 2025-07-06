@@ -59,6 +59,7 @@ namespace myslam {
         void DrawStaticLine(); 
 
         Frame::Ptr current_frame_ = nullptr; // 初始帧为空指针
+        Frame::Ptr reference_frame_ = nullptr; // 参考帧
         Map::Ptr map_ = nullptr;
 
         std::thread viewer_thread_;

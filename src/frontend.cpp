@@ -15,14 +15,19 @@ namespace myslam {
             case FrontendStatus::INIT:
                 Init(); // 进行数据初始化
                 break;
-            case FrontendStatus::TRACK:
+            case FrontendStatus::TRACKING_GOOD:
+            case FrontendStatus::TRACKING_BAD:
                 Track(); // 进行光流追踪、位姿估计（必要时刻插入关键帧）
                 break;
+            case FrontendStatus::LOST:
+                ReTrack();
+                break;
         }
-
-        insert_key_flag = !insert_key_flag; // 隔一帧插入
       
         if(current_frame_->is_keyframe_) { // 若为关键帧则进行插入
+
+            reference_frame_ = current_frame_; // 参考帧更新（为最近的一个关键帧）
+
             backend_->InsertNewKeyFrame(current_frame_); // 后端地图插入关键帧
             backend_->Wake(); // 激活后端更新，后端只优化关键帧
             
@@ -68,9 +73,10 @@ namespace myslam {
         camera_left_->pose_ = init_left_pose; // 设置初始帧左目图像的位姿为单位阵
         camera_right_->pose_ = init_right_pose;
         current_frame_->SetPose(init_left_pose);
+        current_frame_->SetRelativePose(init_left_pose); // 设置当前帧的相对位姿为单位阵
 
         if (MapInit()) { // 地图初始化并且成功
-            status_ = FrontendStatus::TRACK; // 切换前端工作状态码
+            status_ = FrontendStatus::TRACKING_GOOD; // 切换前端工作状态码
 
             current_frame_->SetKeyFrame(); // 设第一帧为关键帧
 
@@ -165,7 +171,7 @@ namespace myslam {
                 kps_left.push_back(kp->position_.pt); // 注意指针形式，kp是一个feature类，要注入的是feature类中特征点的2D位置数据         
                 auto mp = kp->map_point_.lock();
                 if (mp) {
-                    auto px = camera_right_->world2pixel(mp->pos_, current_frame_->Pose());
+                    auto px = camera_right_->world2pixel(mp->pos_, current_frame_->RelativePose() * reference_frame_->Pose());
                     kps_right.push_back(cv::Point2f(px[0], px[1])); // 使用投影点作为初始值
                 } else {   
                     kps_right.push_back(kp->position_.pt); // 使用左图中相同的坐标作为初始值
@@ -205,45 +211,53 @@ namespace myslam {
 
     int Frontend::LKDetectLastFeatures() {
         std::vector<cv::Point2f> kps_last, kps_current;
+        std::vector<Feature::Ptr> last_features_tracked; // 上一帧追踪的特征点
+
         for (auto &kp : last_frame_->features_left_) {
-            if (kp) {
+            if (kp) { // 跳过空指针
+                last_features_tracked.push_back(kp); // 保存特征点
                 if (kp->map_point_.lock()) {
                     auto mp = kp->map_point_.lock();
-                    auto px = camera_left_->world2pixel(mp->pos_, current_frame_->Pose()); // 使用投影坐标
-                    kps_last.push_back(kp->position_.pt);  // 上一帧左图的特征点
-                    kps_current.push_back(cv::Point2f(px[0], px[1]));
+                    auto px = camera_left_->world2pixel(mp->pos_, current_frame_->RelativePose() * reference_frame_->Pose());
+                    kps_last.push_back(kp->position_.pt);
+                    kps_current.push_back(cv::Point2f(px[0], px[1])); // 该特征点有关联的地图点，使用重投影作为初始估计
                 } else {
-                    kps_last.push_back(kp->position_.pt); 
-                    kps_current.push_back(kp->position_.pt);
+                    kps_last.push_back(kp->position_.pt);
+                    kps_current.push_back(kp->position_.pt); // 没有关联的地图点（可能已被reset），直接使用上一帧的位置
                 }
             }
         }
 
+        if (kps_last.empty()) {
+            return 0; // 没有可追踪的点？
+        }
+
+        // Step 2: 使用光流法进行追踪
         std::vector<uchar> status;
         std::vector<float> err;
         cv::calcOpticalFlowPyrLK(
-            last_frame_->left_img_, current_frame_->left_img_, // 根据上一帧来追踪现在这一帧特征点
-            kps_last, kps_current,   
-            status, err,            
-            cv::Size(11, 11),       
-            3,                     
+            last_frame_->left_img_, current_frame_->left_img_,
+            kps_last, kps_current,
+            status, err,
+            cv::Size(11, 11),
+            3,
             cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01),
-            cv::OPTFLOW_USE_INITIAL_FLOW // 使用初始值是否会更好？
+            cv::OPTFLOW_USE_INITIAL_FLOW
         );
 
+        // Step 3: 为当前帧创建新的特征点，并继承地图点关联
         int num_good_kps = 0;
-        for(size_t i = 0;i < status.size(); i++) {
+        for(size_t i = 0; i < status.size(); i++) {
             if(status[i]) {
-                cv::KeyPoint kp(kps_current[i], 7); // 创建一个大小为7的关键点
+                cv::KeyPoint kp(kps_current[i], 7);
                 Feature::Ptr feature(new Feature(current_frame_, kp));
-                current_frame_->features_left_.push_back(feature); // 将光流追踪后的特征点注入当前左图特征点
-                                                                    // 很有深意，当光流法追丢时，需要重新进行GFTT检测
-                feature->map_point_ = last_frame_->features_left_[i]->map_point_; // 将上一帧特征点对应地图点插入对应下一帧地图点
+                feature->map_point_ = last_features_tracked[i]->map_point_;  //从保存的 last_features_tracked 中获取对应的地图点
+                current_frame_->features_left_.push_back(feature);
                 num_good_kps++;
-            }  // 注意追踪上一帧得到结果没有填充nullptr
+            }
         }
 
-        // std::cout << "Detect " << num_good_kps << " good features in last frame" << std::endl; // 输出在右目图像中可追踪到的特征点数量
+        // std::cout << "Detect " << num_good_kps << " good features in last frame" << std::endl;
         return num_good_kps;
     }
 
@@ -260,7 +274,7 @@ namespace myslam {
         // 顶点设置
         VertexPose *vertex_pose = new VertexPose();  // 相机位姿顶点
         vertex_pose->setId(0);
-        vertex_pose->setEstimate(current_frame_->Pose()); // 设置顶点初始值为上一帧的位姿（不产生大机动）
+        vertex_pose->setEstimate(current_frame_->RelativePose() * reference_frame_->Pose()); // 设置顶点初始值为上一帧的位姿（不产生大机动）
         optimizer.addVertex(vertex_pose); // 加入顶点
     
         // 相机内参矩阵
@@ -272,6 +286,9 @@ namespace myslam {
         std::vector<Feature::Ptr> features;
 
         for (size_t i = 0; i < current_frame_->features_left_.size(); ++i) {  // 有多少特征点就有多少条边，一个位姿顶点对n个特征点
+            if (current_frame_->features_left_[i] == nullptr) {
+                continue; // 跳过空指针
+            }
             auto mp = current_frame_->features_left_[i]->map_point_.lock(); // 若存在三角化后的地图点
             
             if (mp) {
@@ -299,7 +316,6 @@ namespace myslam {
         const double chi2_th = 5.991;
         int cnt_outlier = 0;
         for (int iteration = 0; iteration < 4; iteration++) {   // 进行4次迭代，每次迭代优化10次
-            vertex_pose->setEstimate(current_frame_->Pose());
             optimizer.initializeOptimization();
             optimizer.optimize(10);
             cnt_outlier = 0;
@@ -325,20 +341,21 @@ namespace myslam {
             }
         }
     
-        // std::cout << "Outlier/Inlier in pose estimating: " << cnt_outlier << "/"
-        //           << features.size() - cnt_outlier << std::endl;
+        std::cout << "Outlier/Inlier in pose estimating: " << cnt_outlier << "/"
+                  << features.size() - cnt_outlier << std::endl;
 
         // 优化结果输出到当前帧的位姿
         current_frame_->SetPose(vertex_pose->estimate());
+        current_frame_->SetRelativePose(vertex_pose->estimate() * reference_frame_->Pose().inverse()); // 设置当前帧的相对位姿
     
         // std::cout << "Current Pose = \n" << current_frame_->Pose().matrix() << std::endl  << std::endl;
     
-        // for (auto &feat : features) {
-        //     if (feat->is_outlier_) {
-        //         feat->map_point_.reset();
-        //         feat->is_outlier_ = false;  // maybe we can still use it in future
-        //     }
-        // }
+        for (auto &feat : features) {
+            if (feat->is_outlier_) {
+                feat->map_point_.reset(); // 断开与地图点的关联
+                feat->is_outlier_ = false;  // 重置标记
+            }
+        }
         return features.size() - cnt_outlier; // 返回剔除异常点的计数
     }
 
@@ -424,28 +441,41 @@ namespace myslam {
     }
 
     int Frontend::Track() {
-        current_frame_->SetPose(relative_motion_ * last_frame_->Pose()); // 用上一时刻的相对运动和世界坐标位姿来估计当前帧的世界位姿
+        current_frame_->SetRelativePose(relative_motion_ * last_frame_->RelativePose()); // relative_motion_为上一帧相对于前一帧的位姿
         
-        LKDetectLastFeatures(); // 光流法追踪上一帧检测位姿
+        LKDetectLastFeatures(); // 光流法追踪特征点进行匹配
 
-        num_track_good_ = BACurrentPose(); // BA计算PnP问题，并返回正常优化的点数 current_frame_->Pose()值在这里更新
-        if(num_track_good_ < num_features_tracking_) { // 正常优化点数小于允许值，重新检测特征子并三角化
-            ReTrack();
-        } 
+        num_track_good_ = BACurrentPose(); // BA优化当前位姿，并返回内点数量
 
-        else {  
-            if(insert_key_flag) { // 隔一普通帧帧插入一个关键帧        
-                current_frame_->SetKeyFrame();   // 当前帧设置为关键帧
+        if (num_track_good_ > num_features_tracking_good_) {
+            status_ = FrontendStatus::TRACKING_GOOD;
+            // std::cout << "Tracking good: " << num_features_tracking_good_ << std::endl;
+        } else if (num_track_good_ > num_features_tracking_bad_) {
+            // std::cout << "Tracking bad." << std::endl;
+            status_ = FrontendStatus::TRACKING_BAD;
+        } else {
+            status_ = FrontendStatus::LOST;
+            std::cout << "Tracking lost, try to relocalize or reinitialize." << std::endl;
+        }
+
+        if (status_ == FrontendStatus::TRACKING_GOOD) {
+            // 追踪良好，根据运动量判断是否插入关键帧
+            if (relative_motion_.log().norm() > 0.1) { // 阈值可调
+                current_frame_->SetKeyFrame();
             }
-            relative_motion_ = current_frame_->Pose() * last_frame_->Pose().inverse(); // 计算相对运动
+        } else if (status_ == FrontendStatus::TRACKING_BAD | status_ == FrontendStatus::LOST) {
+            ReTrack();
+        }
+        // 如果状态是 LOST，则不执行任何操作，等待外部重定位或重启
+
+        if (status_ != FrontendStatus::LOST) {
+            relative_motion_ = current_frame_->RelativePose() * last_frame_->RelativePose().inverse();
         }
 
         return num_track_good_;
     }
 
     void Frontend::ReTrack() {
-        relative_motion_ = current_frame_->Pose() * last_frame_->Pose().inverse();
-
         // 清空之前优化不好的特征点
         std::vector<std::shared_ptr<Feature>>().swap(current_frame_->features_left_);
 
@@ -455,9 +485,11 @@ namespace myslam {
 
         // 插入关键帧
         current_frame_->SetKeyFrame();   // 当前帧设置为关键帧
+        // 可加入一个retrack的通过判断
         // std::cout << "keyframe id:" << current_frame_->keyframe_id_ << std::endl; // 测试用检查关键帧id
         // std::cout << "frame id:" << current_frame_->id_ << std::endl; // 测试用检查帧id
 
+        status_ = FrontendStatus::TRACKING_GOOD;
     }
 
     void Frontend::Stop() {

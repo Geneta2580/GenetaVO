@@ -20,6 +20,7 @@ namespace myslam {
         double time_stamp_;              // 时间戳，暂不使用
         bool is_keyframe_ = false;       // 是否为关键帧
         SE3 pose_;                       // Tcw 形式Pose
+        SE3 relative_pose_;              // 相对位姿，Tcw = Tcw_prev * relative_pose_
         std::mutex pose_mutex_;          // Pose数据锁
         cv::Mat left_img_, right_img_;   // stereo images
         cv::Mat descriptors_;             // ORB特征描述子
@@ -40,10 +41,22 @@ namespace myslam {
             return pose_;
         }
         
+        // 返回相对位姿
+        SE3 RelativePose() {
+            std::unique_lock<std::mutex> lck(pose_mutex_);
+            return relative_pose_;
+        }
+
         // 设置位姿
         void SetPose(const SE3 &pose) {
             std::unique_lock<std::mutex> lck(pose_mutex_);
             pose_ = pose;
+        }
+
+        // 设置相对位姿
+        void SetRelativePose(const SE3 &pose) {
+            std::unique_lock<std::mutex> lck(pose_mutex_);
+            relative_pose_ = pose;
         }
 
         // 设置ORB特征描述子

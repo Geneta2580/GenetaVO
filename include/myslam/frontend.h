@@ -20,7 +20,7 @@
 namespace myslam {
 
     // 前端工作状态
-    enum class FrontendStatus {INIT, TRACK, KEYFRAME}; 
+    enum class FrontendStatus {INIT, TRACKING_GOOD, TRACKING_BAD, LOST}; 
 
     // 前端，估计当前帧的Pose，并在适当时刻向地图中加入地图点
     class Frontend { 
@@ -89,6 +89,7 @@ namespace myslam {
 
             // 数据变量初始化，注意这里不能为空指针，因为在前端程序中会有访问初始值的成员变量，不能访问空指针的成员变量
             Frame::Ptr current_frame_ = nullptr;  // 当前帧 std::make_shared<Frame>()这个可能导致线程的问题
+            Frame::Ptr reference_frame_ = nullptr; // 参考帧（最近的一个关键帧）
             Frame::Ptr last_frame_ = nullptr;     // 上一帧
             Camera::Ptr camera_left_ = nullptr;   // 左侧相机
             Camera::Ptr camera_right_ = nullptr;  // 右侧相机
@@ -105,11 +106,12 @@ namespace myslam {
 
             // 一些参数
             int num_features_ = myslam::Config::Get<int>("num_features");
-            int num_features_tracking_ = myslam::Config::Get<double>("num_features_tracking"); 
+            int num_features_tracking_good_ = 250;  // 250 myslam::Config::Get<int>("num_features_tracking_good")
+            int num_features_tracking_bad_ = 50;  // 50; myslam::Config::Get<int>("num_features_tracking_bad")
+ 
             int num_track_good_ = 0;
 
             int num_features_init_ = 100;
-            int num_features_needed_for_keyframe_ = 80;
     };
 }
 #endif
