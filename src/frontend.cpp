@@ -26,6 +26,10 @@ namespace myslam {
             backend_->InsertNewKeyFrame(current_frame_); // 后端地图插入关键帧
             backend_->Wake(); // 激活后端更新，后端只优化关键帧
             
+            if (loop_) {
+                loop_->Wake(); // 每次插入关键帧都唤醒回环检测
+            }
+
             viewer_->InsertNewKeyFrame(current_frame_); // 可视化界面地图插入关键帧
         }
 
@@ -71,8 +75,6 @@ namespace myslam {
             current_frame_->SetKeyFrame(); // 设第一帧为关键帧
 
             loop_->SetMap(map_); // 将地图传输给回环
-            loop_->Wake(); // 激活回环检测
-
             backend_->SetCameras(camera_left_, camera_right_); // 将相机左右的位姿（实际上只要左右相对的位姿即可）赋给空指针
             
             // 给viewer和backend提供初始地图信息，进行一次即可
@@ -456,8 +458,6 @@ namespace myslam {
         // std::cout << "keyframe id:" << current_frame_->keyframe_id_ << std::endl; // 测试用检查关键帧id
         // std::cout << "frame id:" << current_frame_->id_ << std::endl; // 测试用检查帧id
 
-        loop_->SetMap(map_); // 将地图传输给回环，回环需要地图历史帧
-        loop_->Wake(); // 激活回环检测
     }
 
     void Frontend::Stop() {

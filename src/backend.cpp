@@ -113,7 +113,7 @@ namespace myslam {
             LoopEdge *edge = new LoopEdge();
             edge->setVertex(0, vertices.at(loop_pair.first));
             edge->setVertex(1, vertices.at(loop_pair.second));
-            edge->setInformation(Mat66::Identity()); // 可以适当增大
+            edge->setInformation(Mat66::Identity() * 100); // 可以适当增大
             edge->setMeasurement(all_loop_poses.at(loop_pair.first)); 
             optimizer.addEdge(edge);
         }
