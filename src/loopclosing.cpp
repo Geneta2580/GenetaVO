@@ -1,4 +1,5 @@
 #include "myslam/loopclosing.h"
+#include <opencv2/core/eigen.hpp>
 
 namespace myslam{
 
@@ -58,7 +59,7 @@ namespace myslam{
         db_.query(curr_descriptors, results, 10); // 返回前10候选
 
         if (results.size() >= 2) {
-            min_score_ = 0.75 * results[1].Score; // 排除自匹配[6](@ref)  
+            min_score_ = 0.75 * results[1].Score; 
         } 
         else {}
 
@@ -66,18 +67,22 @@ namespace myslam{
             if (active_kfs.count(ret.Id) == 0) { // 安全检查，防止访问不存在的关键帧
                 continue;
             }
-            if ((ret.Id) != curr_kf_id && ret.Score > min_score_) {
+            if ((ret.Id) != curr_kf_id && ret.Score > min_score_) { // 排除自匹配[6](@ref)  
                 if(ret.Id != 0) {
                     if((curr_kf_id - ret.Id) > window_size_) { // 时间一致性检测，检测到回环的帧必须相差一定的时间
                         // std::cout << "当前KF的帧ID: " << curr_kf_id1 << " 可能回环的KF的帧ID: " << active_kfs[ret.Id]->id_ <<
                         //  " 当前KF的ID:" << curr_kf_id << " 可能回环的KF的ID: " << ret.Id << std::endl;
                         if(((curr_kf_id - static_id_) > window_size_)) { // 当检测到第一次回环后，只有隔一段时间再检测到回环才算
-                            if (RANSAC(curr_kf_id, ret.Id)) { // RANSAC几何校验
+                            SE3 estimated_pose;
+                            if (RANSAC(curr_kf_id, ret.Id, estimated_pose)) { // RANSAC几何校验
                                 static_id_ = curr_kf_id;
                                 std::unique_lock<std::shared_mutex> loop_id_lock(loop_id_mutex_);
                                 loop_id_.insert(std::make_pair(curr_kf_id, ret.Id)); // 插入回环的当前帧和候选帧关键帧ID
+                                loop_poses_.insert({curr_kf_id, estimated_pose}); // 存储该回环的相对位姿
+                                // backend_->RequestFullGraphOptimization(); // 请求后端进行全局优化
                                 std::cout << "当前KF的帧ID: " << curr_kf_id1 << " 可能回环的KF的帧ID: " << active_kfs[ret.Id]->id_ <<
                                 " 当前KF的ID:" << curr_kf_id << " 可能回环的KF的ID: " << ret.Id << std::endl;
+                                std::cout << "计算出的相对位姿 T_c_l: \n" << estimated_pose.matrix() << std::endl;
                                 std::cout << "回环为真" << std::endl;
                                 return true;
                             }
@@ -89,25 +94,38 @@ namespace myslam{
         return false;
     }
 
-    bool Loopclosing::RANSAC(size_t curr_id, size_t candidate_id) {
+    void Loopclosing::Query(Frame::Ptr frame, DBoW3::QueryResults &results) {
+        if (frame->descriptors_.empty()) {
+            return;
+        }
+        db_.query(frame->descriptors_, results, 4); // 返回前4个候选
+    }
+
+    Loopclosing::LoopIDType Loopclosing::GetAllLoopIDs() {
+        std::shared_lock<std::shared_mutex> lock(loop_id_mutex_);
+        return loop_id_;
+    }
+
+    Loopclosing::LoopPoseType Loopclosing::GetAllLoopPoses() {
+        std::shared_lock<std::shared_mutex> lock(loop_id_mutex_);
+        return loop_poses_;
+    }
+
+     bool Loopclosing::RANSAC(size_t curr_id, size_t candidate_id, SE3& relative_pose) {
         
-        cv::Mat desc1 = active_kfs[curr_id]->descriptors_;
-        cv::Mat desc2 = active_kfs[candidate_id]->descriptors_;
-        std::vector<cv::KeyPoint> kp1;
-        for(auto &feature: active_kfs[curr_id]->features_left_) {
-            kp1.push_back(feature->position_);
-        } 
-        std::vector<cv::KeyPoint> kp2;
-        for(auto &feature: active_kfs[candidate_id]->features_left_) {
-            kp2.push_back(feature->position_);
-        } 
+        auto curr_kf = active_kfs.at(curr_id);
+        auto candidate_kf = active_kfs.at(candidate_id);
+        
+        // 关键修复：检查描述子是否为空
+        if (curr_kf->descriptors_.empty() || candidate_kf->descriptors_.empty()) {
+            return false;
+        }
 
-        // std::cout << "running" << std::endl;
-        cv::BFMatcher matcher(cv::NORM_HAMMING); // 汉明距离
+        // 1. 特征点匹配
+        cv::BFMatcher matcher(cv::NORM_HAMMING); 
         std::vector<std::vector<cv::DMatch>> knn_matches;
-        matcher.knnMatch(desc1, desc2, knn_matches, 2); // 使用KNN匹配
+        matcher.knnMatch(curr_kf->descriptors_, candidate_kf->descriptors_, knn_matches, 2);
 
-        // Lowe's Ratio Test筛选匹配点，若第一个匹配点距离小于第二个匹配点距离的0.7倍，则认为是好的匹配
         const float ratio_thresh = 0.7f;
         std::vector<cv::DMatch> good_matches;
         for (size_t i = 0; i < knn_matches.size(); i++) {
@@ -116,33 +134,48 @@ namespace myslam{
             }
         }
 
-        if (good_matches.size() < 20) { // 如果好的匹配点太少，直接认为是误匹配
+        if (good_matches.size() < 20) {
             return false;
         }
 
-        // 转换为Point2f格式
-        std::vector<cv::Point2f> pts1, pts2;
-        for (auto& m : good_matches) {
-            pts1.push_back(kp1[m.queryIdx].pt);
-            pts2.push_back(kp2[m.trainIdx].pt);
+        // 2. 构建PnP所需的3D-2D点对
+        std::vector<cv::Point3f> pts3d;
+        std::vector<cv::Point2f> pts2d;
+        for (const auto& m : good_matches) {
+            auto mp = candidate_kf->features_left_[m.trainIdx]->map_point_.lock();
+            if (mp) {
+                pts3d.push_back(cv::Point3f(mp->pos_.x(), mp->pos_.y(), mp->pos_.z()));
+                pts2d.push_back(curr_kf->features_left_[m.queryIdx]->position_.pt);
+            }
         }
 
-        // RANSAC计算本质矩阵
-        cv::Mat E, mask;
-        // 注意：这里的相机内参应该是从配置中读取的真实值
+        if (pts3d.size() < 15) {
+            return false;
+        }
+
+        // 3. 使用 solvePnPRansac 求解PnP
+        cv::Mat rvec, tvec, inliers;
         cv::Mat K = (cv::Mat_<double>(3, 3) << 718.856, 0, 607.1928, 0, 718.856, 185.2157, 0, 0, 1);
-        E = cv::findEssentialMat(pts1, pts2, K, cv::RANSAC, 0.999, 1.0, mask);
+        cv::solvePnPRansac(pts3d, pts2d, K, cv::Mat(), rvec, tvec, false, 100, 4.0, 0.99, inliers);
 
-        // 统计内点数量
-        int inliers = cv::countNonZero(mask);
-
-        // 判断相似性（内点数量>阈值则认为几何一致）
-        const int min_inliers = 15; 
-        if (inliers > min_inliers) {
-            return true;
-        } 
-        else {
+        if (inliers.rows < 15) {
             return false;
         }
+
+        // 4. 计算并存储相对位姿
+        cv::Mat R;
+        cv::Rodrigues(rvec, R);
+        Eigen::Matrix3d R_eigen;
+        cv::cv2eigen(R, R_eigen);
+        Eigen::Vector3d t_eigen;
+        cv::cv2eigen(tvec, t_eigen);
+
+        // PnP求解出的是 T_camera_world, 即 T_c_w
+        // 我们需要的是 T_current_loop, 即 T_c_l
+        // T_c_l = T_c_w * T_w_l = T_c_w * (T_l_w)^-1
+        SE3 T_c_w(R_eigen, t_eigen);
+        relative_pose = T_c_w * candidate_kf->Pose().inverse(); // 当前帧相对于历史帧的相对位姿
+        
+        return true;
     }
 }

@@ -18,6 +18,9 @@ namespace myslam{
         public:
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
             using Ptr = std::shared_ptr<Loopclosing>; // C++11方式
+            
+            // 将LoopIDType重构为可以存储每个回环的相对位姿
+            typedef std::map<size_t, SE3> LoopPoseType;
             typedef std::map<size_t, size_t> LoopIDType;
 
             // 构造函数中启动回环线程并挂起
@@ -35,6 +38,15 @@ namespace myslam{
             // 对关键帧和路标点进行回环检测
             bool DetectLoop();
 
+            // 提供给前端进行重定位查询
+            void Query(Frame::Ptr frame, DBoW3::QueryResults &results);
+
+            // 获取所有已确认的回环ID对
+            LoopIDType GetAllLoopIDs();
+
+            // 获取所有回环的相对位姿
+            LoopPoseType GetAllLoopPoses();
+
             // 候选的关键帧ID
             LoopIDType loop_id_;
 
@@ -42,8 +54,11 @@ namespace myslam{
             void SetBackend(BackendPtr backend) { backend_ = backend; }
 
         private:
-            // 对可能的回环做空间一致RANSAC检测
-            bool RANSAC(size_t curr_id, size_t candidate_id);
+            // 对可能的回环做空间一致RANSAC检测, 成功时返回相对位姿
+            bool RANSAC(size_t curr_id, size_t candidate_id, SE3& relative_pose);
+
+            // 存储每个回环的相对位姿，键为当前帧ID
+            LoopPoseType loop_poses_;
 
             DBoW3::Vocabulary vocab_; // 持久化词汇库
             DBoW3::Database db_;       // 数据库实例
@@ -64,7 +79,7 @@ namespace myslam{
             // 数据锁
             std::mutex data_mutex_; 
 
-            std::shared_mutex loop_id_mutex_;  // 读写锁
+            std::shared_mutex loop_id_mutex_;  // 读写锁，同时保护loop_id_和loop_poses_
 
             // 满足条件时唤醒线程
             std::condition_variable loop_update_; 

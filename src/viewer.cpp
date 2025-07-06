@@ -171,14 +171,14 @@ namespace myslam {
             DrawFrame(af.second, blue); // 这里all_frames_是一个键对值，std::pair，second表示输出pair的第二个索引
         }
 
-        glPointSize(2);
-        glBegin(GL_POINTS);
-        for (auto& landmark : all_landmarks_) {
-            auto pos = landmark.second->Pos();
-            glColor3f(red[0], red[1], red[2]);
-            glVertex3d(pos[0], pos[1], pos[2]);
-        }
-        glEnd();
+        // glPointSize(2);  // 不绘制点云
+        // glBegin(GL_POINTS);
+        // for (auto& landmark : all_landmarks_) {
+        //     auto pos = landmark.second->Pos();
+        //     glColor3f(red[0], red[1], red[2]);
+        //     glVertex3d(pos[0], pos[1], pos[2]);
+        // }
+        // glEnd();
     }
 
     // 渲染一条直线，与外部参数无关，测试多线程并行时用
