@@ -105,7 +105,7 @@ namespace myslam {
             bool insert_key_flag = true;
 
             // 一些参数
-            int num_features_ = myslam::Config::Get<int>("num_features");
+            int num_features_ = myslam::Config::Get<int>("num_features"); // 300
             int num_features_tracking_good_ = 250;  // 250 myslam::Config::Get<int>("num_features_tracking_good")
             int num_features_tracking_bad_ = 50;  // 50; myslam::Config::Get<int>("num_features_tracking_bad")
  

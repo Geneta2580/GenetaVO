@@ -96,6 +96,11 @@ namespace myslam {
             vertices.insert({kf->keyframe_id_, vertex_pose});
         }
         
+        // // 固定位姿最老的一帧，为优化问题提供锚点
+        // if (!keyframes.empty() && vertices.count(keyframes.begin()->first)) {
+        //     vertices.at(keyframes.begin()->first)->setFixed(true);
+        // }
+
         // 路标顶点，使用路标id索引
         std::map<unsigned long, VertexXYZ *> vertices_landmarks; // 路标顶点键值对
     
@@ -161,15 +166,14 @@ namespace myslam {
             // 图中没有边，没有可优化的内容，直接返回
             return;
         }
-
-        // do optimization and eliminate the outliers
-        optimizer.initializeOptimization();
-        optimizer.optimize(10);
     
         // 开头5轮优化自适应调整鲁棒值
         int cnt_outlier = 0, cnt_inlier = 0;
         int iteration = 0;
         while (iteration < 5) {
+            // do optimization and eliminate the outliers
+            optimizer.initializeOptimization();
+            optimizer.optimize(10); // 每次迭代都进行优化
             cnt_outlier = 0;
             cnt_inlier = 0;
             // determine if we want to adjust the outlier threshold
@@ -181,7 +185,7 @@ namespace myslam {
                 }
             }
             double inlier_ratio = cnt_inlier / double(cnt_inlier + cnt_outlier);
-            if (inlier_ratio > 0.5) { // 优化良好的点的比例大于50%，不调整鲁棒核函数阈值
+            if (inlier_ratio > 0.7) { // 优化良好的点的比例大于50%，直接结束优化
                 break;
             } else { // 优化良好的点的比例小于50%，调整鲁棒核函数阈值 
                 chi2_th *= 2;

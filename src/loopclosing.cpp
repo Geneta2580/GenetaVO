@@ -43,7 +43,7 @@ namespace myslam{
             // 在执行耗时操作前解锁，避免阻塞其他线程
             lock.unlock();
             
-            // DetectLoop(); // 检测函数
+            DetectLoop(); // 检测函数
         }
     }
 
