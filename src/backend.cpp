@@ -95,11 +95,6 @@ namespace myslam {
             }
             vertices.insert({kf->keyframe_id_, vertex_pose});
         }
-        
-        // // 固定位姿最老的一帧，为优化问题提供锚点
-        // if (!keyframes.empty() && vertices.count(keyframes.begin()->first)) {
-        //     vertices.at(keyframes.begin()->first)->setFixed(true);
-        // }
 
         // 路标顶点，使用路标id索引
         std::map<unsigned long, VertexXYZ *> vertices_landmarks; // 路标顶点键值对
@@ -117,66 +112,74 @@ namespace myslam {
             if (landmark.second->is_outlier_) continue; // 当BA解出的路标越界
             unsigned long landmark_id = landmark.second->id_;
             auto observations = landmark.second->GetObs(); // 获取路标点对应的左右特征点值
+
+            // 如果landmark还没有被加入优化，则新加一个顶点
+            if (vertices_landmarks.find(landmark_id) ==
+                vertices_landmarks.end()) {
+                VertexXYZ *v = new VertexXYZ;
+                v->setEstimate(landmark.second->Pos());
+                v->setId(landmark_id + max_kf_id + 1); 
+                v->setMarginalized(true); 
+                
+                // 关键改动：采用ssvio的锚点策略，并进行严格的空指针检查
+                auto obs_list = landmark.second->GetObs();
+                if (!obs_list.empty()) {
+                    // 1. 尝试锁定第一个观测特征
+                    if (auto first_obs_feat = obs_list.front().lock()) {
+                        // 2. 尝试锁定该特征所在的帧
+                        if (auto first_obs_frame = first_obs_feat->frame_.lock()) {
+                            // 3. 只有在前两步都成功后，才安全地进行判断
+                            if (keyframes.find(first_obs_frame->keyframe_id_) == keyframes.end()) {
+                                v->setFixed(true);
+                            }
+                        }
+                    }
+                }
+
+                vertices_landmarks.insert({landmark_id, v});
+                optimizer.addVertex(v);
+            }
+
             for (auto &obs : observations) {
                 if (obs.lock() == nullptr) continue; // 特征点非空（右侧的提取的时候为了对齐有可能为空）
                 auto feat = obs.lock();
                 if (feat->is_outlier_ || feat->frame_.lock() == nullptr) continue;
     
-                auto frame = feat->frame_.lock(); // 持有该特征的帧
+                auto frame = feat->frame_.lock(); 
+                if (vertices.find(frame->keyframe_id_) == vertices.end()) continue;
+
                 EdgeProjection *edge = nullptr;
-                if (feat->is_on_left_image_) { // 若提在左图
+                if (feat->is_on_left_image_) { 
                     edge = new EdgeProjection(K, left_ext);
                 } else {
                     edge = new EdgeProjection(K, right_ext);
                 }
     
-                // 如果landmark还没有被加入优化，则新加一个顶点
-                if (vertices_landmarks.find(landmark_id) ==
-                    vertices_landmarks.end()) {
-                    VertexXYZ *v = new VertexXYZ;
-                    v->setEstimate(landmark.second->Pos());
-                    v->setId(landmark_id + max_kf_id + 1); // 注意把位姿顶点和路标顶点的id分开
-                    v->setMarginalized(true); // 路标顶点优化边缘化，必须边缘化，否则巨多路标点一起优化，直接爆炸
-                    vertices_landmarks.insert({landmark_id, v});
-                    optimizer.addVertex(v);
-                }
-    
-                // 若路标已被加入优化（能在列表中找到）
-                if (vertices.find(frame->keyframe_id_) != vertices.end() && 
-                    vertices_landmarks.find(landmark_id) != vertices_landmarks.end()) {
-                        edge->setId(index);
-                        edge->setVertex(0, vertices.at(frame->keyframe_id_));    // pose
-                        edge->setVertex(1, vertices_landmarks.at(landmark_id));  // landmark
-                        edge->setMeasurement(toVec2(feat->position_.pt));
-                        edge->setInformation(Mat22::Identity());
-                        auto rk = new g2o::RobustKernelHuber(); // 设置鲁棒核函数
-                        rk->setDelta(chi2_th); // 阈值
-                        edge->setRobustKernel(rk);
-                        edges_and_features.insert({edge, feat});
-                        optimizer.addEdge(edge);
-                        index++;
-                    }
-                else delete edge;
-                    
+                edge->setId(index);
+                edge->setVertex(0, vertices.at(frame->keyframe_id_));    // pose
+                edge->setVertex(1, vertices_landmarks.at(landmark_id));  // landmark
+                edge->setMeasurement(toVec2(feat->position_.pt));
+                edge->setInformation(Mat22::Identity());
+                auto rk = new g2o::RobustKernelHuber(); 
+                rk->setDelta(chi2_th); 
+                edge->setRobustKernel(rk);
+                edges_and_features.insert({edge, feat});
+                optimizer.addEdge(edge);
+                index++;
             }
         }
 
-        // --- 关键修复：在优化前检查图是否有边 ---
         if (optimizer.edges().empty()) {
-            // 图中没有边，没有可优化的内容，直接返回
             return;
         }
     
-        // 开头5轮优化自适应调整鲁棒值
         int cnt_outlier = 0, cnt_inlier = 0;
         int iteration = 0;
         while (iteration < 5) {
-            // do optimization and eliminate the outliers
             optimizer.initializeOptimization();
-            optimizer.optimize(10); // 每次迭代都进行优化
+            optimizer.optimize(10); 
             cnt_outlier = 0;
             cnt_inlier = 0;
-            // determine if we want to adjust the outlier threshold
             for (auto &ef : edges_and_features) {
                 if (ef.first->chi2() > chi2_th) { // edge的优化误差大于阈值
                     cnt_outlier++;
@@ -202,10 +205,6 @@ namespace myslam {
             }
         }
     
-        // std::cout << "Outlier/Inlier in optimization: " << cnt_outlier << "/"
-        //           << cnt_inlier << std::endl;
-    
-        // 给关键帧和路标点的位姿变量赋值，似乎不能可视化了，因为只有当前帧的位姿会被显示出来
         for (auto &v : vertices) {
             keyframes.at(v.first)->SetPose(v.second->estimate());
         }
