@@ -37,6 +37,12 @@ namespace myslam {
         // 关闭后端线程
         void Stop();
 
+        // 请求暂停后端
+        void RequestPause();
+
+        // 恢复后端
+        void Resume();
+
         // 请求一次全局位姿图优化
         void RequestFullGraphOptimization();
 
@@ -62,10 +68,12 @@ namespace myslam {
         std::shared_ptr<Map> map_;
         std::thread backend_thread_;
         std::mutex data_mutex_;
+        std::mutex pause_mutex_;  // 暂停线程锁
 
         std::condition_variable map_update_; // 满足条件时唤醒线程
+        std::condition_variable resume_cv_; // 用于暂停和恢复
         std::atomic<bool> backend_running_;
-        std::atomic<bool> request_full_graph_optimization_{false};
+        std::atomic<bool> pause_requested_{false};
 
         Camera::Ptr cam_left_ = nullptr, cam_right_ = nullptr;
 

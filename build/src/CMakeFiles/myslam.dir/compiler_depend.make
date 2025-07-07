@@ -5843,11 +5843,14 @@ src/CMakeFiles/myslam.dir/loopclosing.cpp.o: /home/geneta/Project/geneta_slam/sr
   /home/geneta/Project/geneta_slam/Thirdparty/DBow3/src/ScoringObject.h \
   /home/geneta/Project/geneta_slam/Thirdparty/DBow3/src/Vocabulary.h \
   /home/geneta/Project/geneta_slam/Thirdparty/DBow3/src/exports.h \
+  /home/geneta/Project/geneta_slam/include/myslam/algorithm.h \
   /home/geneta/Project/geneta_slam/include/myslam/backend.h \
   /home/geneta/Project/geneta_slam/include/myslam/camera.h \
   /home/geneta/Project/geneta_slam/include/myslam/common.h \
+  /home/geneta/Project/geneta_slam/include/myslam/config.h \
   /home/geneta/Project/geneta_slam/include/myslam/feature.h \
   /home/geneta/Project/geneta_slam/include/myslam/frame.h \
+  /home/geneta/Project/geneta_slam/include/myslam/g2o_param.h \
   /home/geneta/Project/geneta_slam/include/myslam/loopclosing.h \
   /home/geneta/Project/geneta_slam/include/myslam/map.h \
   /home/geneta/Project/geneta_slam/include/myslam/mappoint.h \

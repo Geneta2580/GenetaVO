@@ -12,9 +12,14 @@ namespace myslam {
         backend_thread_ = std::thread(std::bind(&Backend::BackendLoop, this)); // 启动后端优化线程
     }
     
-    void Backend::RequestFullGraphOptimization() {
-        request_full_graph_optimization_.store(true);
-        Wake(); // 唤醒后端线程以立即处理请求
+    void Backend::RequestPause() {
+        pause_requested_.store(true);
+        map_update_.notify_one(); // 立刻让后端暂停，防止被前端更新影响
+    }
+
+    void Backend::Resume() {
+        pause_requested_.store(false);
+        resume_cv_.notify_one();
     }
 
     void Backend::Wake() {
@@ -25,19 +30,22 @@ namespace myslam {
     void Backend::Stop() {
         backend_running_.store(false);
         map_update_.notify_one();
+        Resume(); // 唤醒可能处于暂停等待的线程
         backend_thread_.join();
     }
-    
+
     void Backend::BackendLoop() { // 后端优化主线程
         while (backend_running_.load()) {
             std::unique_lock<std::mutex> lock(data_mutex_); // 等待线程被唤醒
             map_update_.wait(lock);
 
-            // 优先处理全局优化请求
-            if (request_full_graph_optimization_.load()) {
-                request_full_graph_optimization_.store(false);
-                OptimizeFullGraph();
-                continue; // 处理完后继续下一次循环等待
+            // 暂停检查点：如果收到暂停请求，则在此等待
+            std::unique_lock<std::mutex> pause_lock(pause_mutex_);
+            resume_cv_.wait(pause_lock, [this] { return !pause_requested_.load(); }); // pause_requested_为false则继续执行
+
+            // 在暂停后再次检查，因为线程可能在Stop()中被唤醒
+            if (!backend_running_.load()) {
+                break;
             }
 
             map_->InsertKeyFrame(new_key_frame_);
@@ -59,74 +67,6 @@ namespace myslam {
 
             Optimize(active_kfs, active_landmarks); // 优化函数
         }
-    }
-    
-    void Backend::OptimizeFullGraph() {
-        std::cout << "Starting full graph optimization..." << std::endl;
-        // setup g2o
-        typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 6>> BlockSolverType;
-        typedef g2o::LinearSolverCSparse<BlockSolverType::PoseMatrixType> LinearSolverType;
-
-        auto solver = new g2o::OptimizationAlgorithmLevenberg(
-            std::make_unique<BlockSolverType>(std::make_unique<LinearSolverType>()));
-        g2o::SparseOptimizer optimizer;
-        optimizer.setAlgorithm(solver);
-        optimizer.setVerbose(false);
-
-        // 1. 添加所有关键帧作为顶点，并添加时序边
-        Map::KeyframesType all_kfs = map_->GetAllKeyFrames();
-        std::map<unsigned long, VertexPose *> vertices;
-        
-        VertexPose* prev_vertex = nullptr;
-        Frame::Ptr prev_kf = nullptr;
-
-        for (auto &kf_pair : all_kfs) {
-            auto kf = kf_pair.second;
-            VertexPose *vertex_pose = new VertexPose();
-            vertex_pose->setId(kf->keyframe_id_);
-            vertex_pose->setEstimate(kf->Pose());
-            if (kf->keyframe_id_ == 0) {
-                vertex_pose->setFixed(true);
-            }
-            optimizer.addVertex(vertex_pose);
-            vertices.insert({kf->keyframe_id_, vertex_pose});
-
-            // 添加时序边
-            if (prev_vertex != nullptr) {
-                SE3 T_relative = prev_kf->Pose().inverse() * kf->Pose();
-                
-                LoopEdge* edge = new LoopEdge();
-                edge->setVertex(0, prev_vertex);
-                edge->setVertex(1, vertex_pose);
-                edge->setMeasurement(T_relative);
-                edge->setInformation(Mat66::Identity());
-                optimizer.addEdge(edge);
-            }
-            prev_vertex = vertex_pose;
-            prev_kf = kf;
-        }
-
-        // 2. 添加所有回环约束作为边
-        auto all_loops = loop_->GetAllLoopIDs();
-        auto all_loop_poses = loop_->GetAllLoopPoses();
-        for (const auto& loop_pair : all_loops) {
-            LoopEdge *edge = new LoopEdge();
-            edge->setVertex(0, vertices.at(loop_pair.first));
-            edge->setVertex(1, vertices.at(loop_pair.second));
-            edge->setInformation(Mat66::Identity() * 100); // 可以适当增大
-            edge->setMeasurement(all_loop_poses.at(loop_pair.first)); 
-            optimizer.addEdge(edge);
-        }
-
-        // 3. 优化
-        optimizer.initializeOptimization();
-        optimizer.optimize(20);
-
-        // 4. 更新所有关键帧的位姿
-        for (auto &v_pair : vertices) {
-            all_kfs.at(v_pair.first)->SetPose(v_pair.second->estimate());
-        }
-        std::cout << "Full graph optimization finished." << std::endl;
     }
 
     void Backend::Optimize(Map::KeyframesType &keyframes,   // 优化后的路标点和关键帧位姿返回到变量，实现对输入的操作
@@ -153,7 +93,6 @@ namespace myslam {
             if (kf->keyframe_id_ > max_kf_id) {
                 max_kf_id = kf->keyframe_id_;
             }
-    
             vertices.insert({kf->keyframe_id_, vertex_pose});
         }
         

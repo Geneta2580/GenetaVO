@@ -63,7 +63,7 @@ namespace myslam {
         SE3 init_left_pose = Sophus::SE3d();
         Sophus::SE3d translation_transform(
             Sophus::SO3d(), 
-            Eigen::Vector3d(0.537166, 0.0, 0.0) // 左右目距离为0.537166
+            Eigen::Vector3d(0.3861448, 0.0, 0.0) // 左右目距离为0.537166
         );
         Sophus::SE3d init_right_pose = init_left_pose * translation_transform;
 
@@ -341,8 +341,8 @@ namespace myslam {
             }
         }
     
-        std::cout << "Outlier/Inlier in pose estimating: " << cnt_outlier << "/"
-                  << features.size() - cnt_outlier << std::endl;
+        // std::cout << "Outlier/Inlier in pose estimating: " << cnt_outlier << "/"
+        //           << features.size() - cnt_outlier << std::endl;
 
         // 优化结果输出到当前帧的位姿
         current_frame_->SetPose(vertex_pose->estimate());
@@ -380,7 +380,7 @@ namespace myslam {
 
             if (triangulation(poses, points, pt_world) && pt_world[2] > 0) { // 进行三角化，同时判断三角化后三维点数值的有效性
                 auto new_map_point = MapPoint::CreateNewMappoint();
-                pt_world = current_pose_Twc * pt_world; /// 不知道要不要加
+                pt_world = current_pose_Twc * pt_world; // 将三角化得到的点从相机坐标系转换到世界坐标系
                 new_map_point->SetPos(pt_world);     // 设置地图点
                 map_->InsertMapPoint(new_map_point); // 将地图点插入地图
 

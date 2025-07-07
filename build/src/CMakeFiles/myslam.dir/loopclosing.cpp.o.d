@@ -778,6 +778,7 @@ src/CMakeFiles/myslam.dir/loopclosing.cpp.o: \
  /usr/local/include/pangolin/video/video_output_interface.h \
  /usr/local/include/pangolin/video/video_input.h \
  /usr/local/include/pangolin/video/video_output.h \
+ /home/geneta/Project/geneta_slam/include/myslam/camera.h \
  /home/geneta/Project/geneta_slam/Thirdparty/DBow3/src/DBoW3.h \
  /home/geneta/Project/geneta_slam/Thirdparty/DBow3/src/Vocabulary.h \
  /home/geneta/Project/geneta_slam/Thirdparty/DBow3/src/exports.h \
@@ -787,12 +788,13 @@ src/CMakeFiles/myslam.dir/loopclosing.cpp.o: \
  /home/geneta/Project/geneta_slam/Thirdparty/DBow3/src/Database.h \
  /home/geneta/Project/geneta_slam/Thirdparty/DBow3/src/QueryResults.h \
  /home/geneta/Project/geneta_slam/include/myslam/backend.h \
- /home/geneta/Project/geneta_slam/include/myslam/camera.h \
  /home/geneta/Project/geneta_slam/include/myslam/loopclosing.h \
  /usr/local/include/g2o/types/slam3d/edge_se3.h \
  /usr/local/include/g2o/types/slam3d/vertex_se3.h \
  /usr/local/include/g2o/types/slam3d/isometry3d_mappings.h \
  /usr/local/include/g2o/types/slam3d/se3quat.h \
+ /home/geneta/Project/geneta_slam/include/myslam/g2o_param.h \
+ /home/geneta/Project/geneta_slam/include/myslam/algorithm.h \
  /usr/include/opencv4/opencv2/core/eigen.hpp \
  /usr/include/eigen3/unsupported/Eigen/CXX11/Tensor \
  /usr/include/eigen3/Eigen/Core \
@@ -878,4 +880,5 @@ src/CMakeFiles/myslam.dir/loopclosing.cpp.o: \
  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorMap.h \
  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorRef.h \
  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorIO.h \
- /usr/include/eigen3/Eigen/src/Core/util/ReenableStupidWarnings.h
+ /usr/include/eigen3/Eigen/src/Core/util/ReenableStupidWarnings.h \
+ /home/geneta/Project/geneta_slam/include/myslam/config.h

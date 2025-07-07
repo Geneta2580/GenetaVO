@@ -4,8 +4,11 @@
 #include "myslam/common.h"
 #include "myslam/map.h"
 #include "myslam/frame.h"
+#include "myslam/camera.h"
 #include "DBoW3.h"
 #include "myslam/backend.h"
+#include "myslam/g2o_param.h"
+#include "myslam/algorithm.h"
 // #include <DBoW3/Vocabulary.h>
 
 namespace myslam{
@@ -57,6 +60,9 @@ namespace myslam{
             // 对可能的回环做空间一致RANSAC检测, 成功时返回相对位姿
             bool RANSAC(size_t curr_id, size_t candidate_id, SE3& relative_pose);
 
+            // 进行回环全局优化
+            void OptimizeFullGraph();
+
             // 存储每个回环的相对位姿，键为当前帧ID
             LoopPoseType loop_poses_;
 
@@ -65,12 +71,12 @@ namespace myslam{
             DBoW3::QueryResults results; 
 
             // 传入的关键帧
-            Map::KeyframesType active_kfs;
+            Map::KeyframesType active_kfs_;
 
             // 回环主线线程
             void Loop();
 
-            // 
+            // 全局地图，需要多次传输，重要
             std::shared_ptr<Map> map_;
 
             // 回环检测线程
