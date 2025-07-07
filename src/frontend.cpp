@@ -63,7 +63,7 @@ namespace myslam {
         SE3 init_left_pose = Sophus::SE3d();
         Sophus::SE3d translation_transform(
             Sophus::SO3d(), 
-            Eigen::Vector3d(0.3861448, 0.0, 0.0) // 左右目距离为0.537166
+            Eigen::Vector3d(0.537166, 0.0, 0.0) // 左右目距离为0.537166
         );
         Sophus::SE3d init_right_pose = init_left_pose * translation_transform;
 

@@ -69,7 +69,7 @@ namespace myslam {
             Frame::Ptr current_frame_ = nullptr;
         
             // 激活帧（用于BA优化）的数量
-			 size_t num_active_frames_ = 7;  
+			 size_t num_active_frames_ = 12;  
     };
 
 }

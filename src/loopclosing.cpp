@@ -43,7 +43,7 @@ namespace myslam{
             // 在执行耗时操作前解锁，避免阻塞其他线程
             lock.unlock();
             
-            DetectLoop(); // 检测函数
+            // DetectLoop(); // 检测函数
         }
     }
 
@@ -226,7 +226,7 @@ namespace myslam{
         std::map<unsigned long, VertexPose *> vertices;
         
         // 固定近期帧的位姿，防止回环调整对当前位姿产生过大影响
-        const int recent_kf_window = 10; 
+        const int recent_kf_window = 12; 
         const unsigned long max_kf_id = all_kfs.rbegin()->first; // 最新关键帧的ID
 
         VertexPose* prev_vertex = nullptr;

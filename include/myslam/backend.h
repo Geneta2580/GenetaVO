@@ -77,8 +77,6 @@ namespace myslam {
 
         Camera::Ptr cam_left_ = nullptr, cam_right_ = nullptr;
 
-        int last_loop_size_ = 0;
-
         LoopclosingPtr loop_; // 新增后端实例引用
 
         int old_vertex_id = 0; // 需要边缘化的旧顶点
