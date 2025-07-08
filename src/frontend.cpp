@@ -104,13 +104,22 @@ namespace myslam {
         // 这个是ORB检测
         cv::Ptr<cv::ORB> orb = cv::ORB::create(num_features_*4, 1.2, 8);
 
+        // --- 为保证BAD新检测的特征点不与之前的重合，增加掩膜 ---
+        cv::Mat mask(current_frame_->left_img_.size(), CV_8UC1, 255);
+        for (auto &feat : current_frame_->features_left_) {
+            if (feat) {
+                cv::rectangle(mask, feat->position_.pt - cv::Point2f(10, 10),
+                              feat->position_.pt + cv::Point2f(10, 10), 0, cv::FILLED);
+            }
+        }
+
         // 对图像进行直方图均衡化增强，提升特征点检测效果
         cv::Mat enhanced_img;
         cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(6.0, cv::Size(4, 4)); // 将图像分割为4x4的小块，每个小块内都进行直方图均衡化(阈值为6，越大对比度越强，噪声影响越大)
         clahe->apply(current_frame_->left_img_, enhanced_img);
 
         std::vector<cv::KeyPoint> all_keypoints;
-        orb->detect(enhanced_img, all_keypoints);
+        orb->detect(enhanced_img, all_keypoints, mask);
 
         // gftt->detect(current_frame_->left_img_, keypoints); // 将提取到的特征点注入到对应帧的类参数当中去
         // fast->detect(current_frame_->left_img_, keypoints); // FAST
@@ -335,7 +344,7 @@ namespace myslam {
                     e->setLevel(0); // 优化层级保持为0，优先进行
                 };
     
-                if (iteration >= 2) { // 迭代值为2禁用鲁棒核函数？
+                if (iteration == 2) { // 迭代值为2禁用鲁棒核函数？
                     e->setRobustKernel(nullptr);
                 }
             }
