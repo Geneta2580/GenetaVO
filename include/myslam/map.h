@@ -6,7 +6,8 @@
 #include "myslam/common.h"
 #include "myslam/mappoint.h"
 #include "myslam/frame.h"
-#include <pangolin/pangolin.h>
+#include <mutex>
+#include <unordered_set>
 
 namespace myslam {
 
@@ -20,56 +21,54 @@ namespace myslam {
         
             Map() {}
         
+            /// 公开的、用于模块间协调的粗粒度锁
+            std::mutex map_update_mutex_;
+
             /// 增加一个关键帧
             void InsertKeyFrame(Frame::Ptr frame);
 
             /// 增加一个地图顶点
             void InsertMapPoint(MapPoint::Ptr map_point);
-        
+
             /// 获取所有地图点
-            LandmarksType GetAllMapPoints() {
-                std::unique_lock<std::mutex> lck(data_mutex_);
-                return landmarks_;
-            }
+            LandmarksType GetAllMapPoints();
 
             /// 获取所有关键帧
-            KeyframesType GetAllKeyFrames() {
-                std::unique_lock<std::mutex> lck(data_mutex_);
-                return keyframes_;
-            }
+            KeyframesType GetAllKeyFrames();
         
             /// 获取激活地图点
-            LandmarksType GetActiveMapPoints() {
-                std::unique_lock<std::mutex> lck(data_mutex_);
-                return active_landmarks_;
-            }
+            LandmarksType GetActiveMapPoints();
         
             /// 获取激活关键帧
-            KeyframesType GetActiveKeyFrames() {
-                std::unique_lock<std::mutex> lck(data_mutex_);
-                return active_keyframes_;
-            }
-        
-            /// 清理map中观测数量为零的点
-            void CleanMap();
+            KeyframesType GetActiveKeyFrames();
+
+            // 添加地图外点列表
+            void AddOutlierMapPoint(unsigned long mpId);
+
+            // 移除地图外点
+            void RemoveAllOutlierMapPoints();
+
+            /// 清理map中活跃观测数量为零的点
+            void RemoveOldActiveMapPoints();
 			
         private:
+            void InsertActiveMapPoint(MapPoint::Ptr map_point);
             // 将旧的关键帧置为不活跃状态
             void RemoveOldKeyframe();
         
-            std::mutex landmarks_mutex_;  // 独立锁
-            std::mutex keyframes_mutex_;  // 独立锁
-            
+            /// 私有的、用于保护内部数据容器的细粒度锁
             std::mutex data_mutex_;
+            
             LandmarksType landmarks_;         // all landmarks
             LandmarksType active_landmarks_; 
             KeyframesType keyframes_;         // all keyframes
             KeyframesType active_keyframes_;
         
+            std::unordered_set<unsigned long> outlier_mappoints_; // 越界的地图点id列表
             Frame::Ptr current_frame_ = nullptr;
         
             // 激活帧（用于BA优化）的数量
-			 size_t num_active_frames_ = 12;  
+			size_t num_active_frames_ = 12;  
     };
 
 }

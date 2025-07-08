@@ -3,8 +3,9 @@
 namespace myslam {
   
     void Map::InsertKeyFrame(Frame::Ptr frame) {
-        std::lock_guard<std::mutex> lock(keyframes_mutex_); // 加锁
         current_frame_ = frame;
+        
+        std::unique_lock<std::mutex> lck(data_mutex_);
         if (keyframes_.find(frame->keyframe_id_) == keyframes_.end()) {
             keyframes_.insert(make_pair(frame->keyframe_id_, frame));
             active_keyframes_.insert(make_pair(frame->keyframe_id_, frame));
@@ -13,25 +14,41 @@ namespace myslam {
             active_keyframes_[frame->keyframe_id_] = frame;
         }
     
+        // 添加新关键帧的活跃观测
+        for (auto& feat : frame->features_left_) {
+            auto mp = feat->map_point_.lock();
+            if (mp) {
+                mp->AddActiveObservation(feat);
+                InsertActiveMapPoint(mp);
+            }
+        }
+
         if (active_keyframes_.size() > num_active_frames_) { // 大于指定的活跃关键帧数量
             RemoveOldKeyframe();
+            RemoveOldActiveMapPoints();
         }
     }
 
     void Map::InsertMapPoint(MapPoint::Ptr map_point) {
-        std::lock_guard<std::mutex> lock(landmarks_mutex_);  // 加锁
-
+        std::unique_lock<std::mutex> lck(data_mutex_);
         if (landmarks_.find(map_point->id_) == landmarks_.end()) {
             landmarks_.insert(make_pair(map_point->id_, map_point));
-            active_landmarks_.insert(make_pair(map_point->id_, map_point));
-            
         } else {       
-            landmarks_[map_point->id_] = map_point; // 对地图路标点进行更新，相同id的mappoint被观测了多次？
+            landmarks_[map_point->id_] = map_point;
+        }
+    }
+
+    void Map::InsertActiveMapPoint(MapPoint::Ptr map_point) {
+        // 外部已加锁，这里不再加锁
+        if (active_landmarks_.find(map_point->id_) == active_landmarks_.end()) {
+            active_landmarks_.insert(make_pair(map_point->id_, map_point));
+        } else {
             active_landmarks_[map_point->id_] = map_point;
         }
     }
     
     void Map::RemoveOldKeyframe() {
+        // 外部已加锁，这里不再加锁
         if (current_frame_ == nullptr) return;
         // 寻找与当前帧最近与最远的两个关键帧
         double max_dis = 0, min_dis = 9999;
@@ -65,25 +82,24 @@ namespace myslam {
         for (auto feat : frame_to_remove->features_left_) {
             auto mp = feat->map_point_.lock();
             if (mp) {
-                mp->RemoveObservation(feat); // 删掉指定帧的左特征点观测
+                mp->RemoveActiveObservation(feat); // 移除活跃观测
             }
         }
         for (auto feat : frame_to_remove->features_right_) {
             if (feat == nullptr) continue; // 右图特征点在光流追上一帧左图的时候为空
             auto mp = feat->map_point_.lock();
             if (mp) {
-                mp->RemoveObservation(feat); // 删掉指定帧的右特征点观测
+                mp->RemoveActiveObservation(feat); // 移除活跃观测
             }
         }
-    
-        CleanMap();
     }
 
-    void Map::CleanMap() {
+    void Map::RemoveOldActiveMapPoints() {
+        // 外部已加锁，这里不再加锁
         int cnt_landmark_removed = 0;
         for (auto iter = active_landmarks_.begin();
              iter != active_landmarks_.end();) {
-            if (iter->second->observed_times_ == 0) { // 清除观测次数为零的点
+            if (iter->second->active_observed_times_ == 0) { // 清除活跃观测次数为零的点
                 iter = active_landmarks_.erase(iter);
                 cnt_landmark_removed++;
             } else {
@@ -93,4 +109,37 @@ namespace myslam {
         // std::cout << "Removed " << cnt_landmark_removed << " active landmarks" << std::endl;
     }
 
+    void Map::AddOutlierMapPoint(unsigned long mpId) {
+        std::unique_lock<std::mutex> lck(data_mutex_);
+        outlier_mappoints_.insert(mpId);
+    }
+
+    void Map::RemoveAllOutlierMapPoints() {
+        std::unique_lock<std::mutex> lck(data_mutex_);
+        for (auto id : outlier_mappoints_) {
+            landmarks_.erase(id);
+            active_landmarks_.erase(id);
+        }
+        outlier_mappoints_.clear();
+    }
+
+    Map::LandmarksType Map::GetAllMapPoints() {
+        std::unique_lock<std::mutex> lck(data_mutex_);
+        return landmarks_;
+    }
+
+    Map::KeyframesType Map::GetAllKeyFrames() {
+        std::unique_lock<std::mutex> lck(data_mutex_);
+        return keyframes_;
+    }
+
+    Map::LandmarksType Map::GetActiveMapPoints() {
+        std::unique_lock<std::mutex> lck(data_mutex_);
+        return active_landmarks_;
+    }
+
+    Map::KeyframesType Map::GetActiveKeyFrames() {
+        std::unique_lock<std::mutex> lck(data_mutex_);
+        return active_keyframes_;
+    }
 }

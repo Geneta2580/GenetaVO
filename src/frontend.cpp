@@ -8,12 +8,14 @@ namespace myslam {
         backend_(std::make_shared<Backend>()), loop_(std::make_shared<Loopclosing>()), viewer_(std::make_shared<Viewer>())
         {}  // 初始化成员变量，很重要，防止空指针影响初始化
 
-    bool Frontend::Calculate(myslam::Frame::Ptr frame) { // 输入接口为自定义的Frame类  
-        current_frame_ = frame; // 当前帧
+    bool Frontend::Calculate(myslam::Frame::Ptr frame) {
+        current_frame_ = frame;
+
+        std::unique_lock<std::mutex> lock(map_->map_update_mutex_);
 
         switch (status_) {
             case FrontendStatus::INIT:
-                Init(); // 进行数据初始化
+                SteroInit(); // 进行数据初始化
                 break;
             case FrontendStatus::TRACKING_GOOD:
             case FrontendStatus::TRACKING_BAD:
@@ -22,20 +24,6 @@ namespace myslam {
             case FrontendStatus::LOST:
                 ReTrack();
                 break;
-        }
-      
-        if(current_frame_->is_keyframe_) { // 若为关键帧则进行插入
-
-            reference_frame_ = current_frame_; // 参考帧更新（为最近的一个关键帧）
-
-            backend_->InsertNewKeyFrame(current_frame_); // 后端地图插入关键帧
-            backend_->Wake(); // 激活后端更新，后端只优化关键帧
-            
-            if (loop_) {
-                loop_->Wake(); // 每次插入关键帧都唤醒回环检测
-            }
-
-            viewer_->InsertNewKeyFrame(current_frame_); // 可视化界面地图插入关键帧
         }
 
         if (viewer_) {
@@ -46,7 +34,7 @@ namespace myslam {
         return true;
     }
     
-    bool Frontend::Init() {
+    bool Frontend::SteroInit() {
         loop_->SetBackend(backend_);
         backend_->SetLoopclosing(loop_); // 回环和后端线程相互连接，方便传输回环数据
 
@@ -63,7 +51,7 @@ namespace myslam {
         SE3 init_left_pose = Sophus::SE3d();
         Sophus::SE3d translation_transform(
             Sophus::SO3d(), 
-            Eigen::Vector3d(0.537166, 0.0, 0.0) // 左右目距离为0.537166
+            Eigen::Vector3d(-0.537166, 0.0, 0.0) // 左右目距离为0.537166
         );
         Sophus::SE3d init_right_pose = init_left_pose * translation_transform;
 
@@ -77,9 +65,8 @@ namespace myslam {
 
         if (MapInit()) { // 地图初始化并且成功
             status_ = FrontendStatus::TRACKING_GOOD; // 切换前端工作状态码
-
-            current_frame_->SetKeyFrame(); // 设第一帧为关键帧
-
+            InsertKeyFrame(); // 将第一帧作为关键帧插入
+            
             loop_->SetMap(map_); // 将地图传输给回环
             backend_->SetCameras(camera_left_, camera_right_); // 将相机左右的位姿（实际上只要左右相对的位姿即可）赋给空指针
             
@@ -222,18 +209,14 @@ namespace myslam {
         std::vector<cv::Point2f> kps_last, kps_current;
         std::vector<Feature::Ptr> last_features_tracked; // 上一帧追踪的特征点
 
-        for (auto &kp : last_frame_->features_left_) {
-            if (kp) { // 跳过空指针
-                last_features_tracked.push_back(kp); // 保存特征点
-                if (kp->map_point_.lock()) {
-                    auto mp = kp->map_point_.lock();
-                    auto px = camera_left_->world2pixel(mp->pos_, current_frame_->RelativePose() * reference_frame_->Pose());
-                    kps_last.push_back(kp->position_.pt);
-                    kps_current.push_back(cv::Point2f(px[0], px[1])); // 该特征点有关联的地图点，使用重投影作为初始估计
-                } else {
-                    kps_last.push_back(kp->position_.pt);
-                    kps_current.push_back(kp->position_.pt); // 没有关联的地图点（可能已被reset），直接使用上一帧的位置
-                }
+        for (auto &feat : last_frame_->features_left_) {
+            auto mp = feat->map_point_.lock();
+            if (feat && mp) { // 跳过空指针, 并且只追踪已三角化的点
+                last_features_tracked.push_back(feat); // 保存特征点
+                // T_c_w = T_c_r * T_r_w
+                auto px = camera_left_->world2pixel(mp->pos_, current_frame_->RelativePose() * reference_frame_->Pose());
+                kps_last.push_back(feat->position_.pt);
+                kps_current.push_back(cv::Point2f(px[0], px[1])); // 该特征点有关联的地图点，使用重投影作为初始估计
             }
         }
 
@@ -273,7 +256,8 @@ namespace myslam {
     int Frontend::BACurrentPose() {
         // 构建图优化，先设定g2o
         typedef g2o::BlockSolver_6_3 BlockSolverType;
-        typedef g2o::LinearSolverCSparse<BlockSolverType::PoseMatrixType> LinearSolverType; // 线性求解器类型
+        // 对于小规模的Pose-Only BA，使用稠密求解器在数值上更稳定
+        typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType;
 
         auto solver = new g2o::OptimizationAlgorithmLevenberg( // 设置优化算法，求解器
             std::make_unique<BlockSolverType>(std::make_unique<LinearSolverType>()));
@@ -283,7 +267,8 @@ namespace myslam {
         // 顶点设置
         VertexPose *vertex_pose = new VertexPose();  // 相机位姿顶点
         vertex_pose->setId(0);
-        vertex_pose->setEstimate(current_frame_->RelativePose() * reference_frame_->Pose()); // 设置顶点初始值为上一帧的位姿（不产生大机动）
+        // 初始值是 T_cw = T_cr * T_rw
+        vertex_pose->setEstimate(current_frame_->RelativePose() * reference_frame_->Pose());
         optimizer.addVertex(vertex_pose); // 加入顶点
     
         // 相机内参矩阵
@@ -350,17 +335,22 @@ namespace myslam {
             }
         }
     
-        // std::cout << "Outlier/Inlier in pose estimating: " << cnt_outlier << "/"
-        //           << features.size() - cnt_outlier << std::endl;
+        std::cout << "Outlier/Inlier in pose estimating: " << cnt_outlier << "/"
+                  << features.size() - cnt_outlier << std::endl;
 
         // 优化结果输出到当前帧的位姿
         current_frame_->SetPose(vertex_pose->estimate());
-        current_frame_->SetRelativePose(vertex_pose->estimate() * reference_frame_->Pose().inverse()); // 设置当前帧的相对位姿
+        // 反向计算出 T_cr = T_cw * T_rw^-1
+        current_frame_->SetRelativePose(vertex_pose->estimate() * reference_frame_->Pose().inverse());
     
         // std::cout << "Current Pose = \n" << current_frame_->Pose().matrix() << std::endl  << std::endl;
     
         for (auto &feat : features) {
             if (feat->is_outlier_) {
+                MapPoint::Ptr mp = feat->map_point_.lock();
+                if (mp && current_frame_->id_ - reference_frame_->id_ <= 2) {
+                    map_->AddOutlierMapPoint(mp->id_);
+                }
                 feat->map_point_.reset(); // 断开与地图点的关联
                 feat->is_outlier_ = false;  // 重置标记
             }
@@ -371,11 +361,15 @@ namespace myslam {
     int Frontend::Triangulation() {
         std::vector<SE3> poses{camera_left_->pose(), camera_right_->pose()};
         int cnt_triangulated_pts = 0;
-        SE3 current_pose_Twc = current_frame_->Pose().inverse(); // 相机坐标系转换为世界坐标系
+        // T_w_c = (T_c_r * T_r_w)^-1
+        SE3 current_pose_Twc = (current_frame_->RelativePose() * reference_frame_->Pose()).inverse();
 
         // std::cout << poses[0].matrix() << std::endl; // 测试用查看传入的位姿矩阵
 
-        for (size_t i = 0; i < current_frame_->features_right_.size(); i++) { // 这里左右无所谓，因为size是一样的
+        for (size_t i = 0; i < current_frame_->features_left_.size(); i++) { // 这里左右无所谓，因为size是一样的
+            if (current_frame_->features_left_[i]->map_point_.lock()) {
+                continue;
+            }
             if (current_frame_->features_right_[i] == nullptr) continue;  // 保证右图匹配点存在
             std::vector<Vec3> points {                                        
                 camera_left_->pixel2camera(                                   // 像素点转换为归一化平面（相机）点，便于三角化
@@ -389,11 +383,11 @@ namespace myslam {
 
             if (triangulation(poses, points, pt_world) && pt_world[2] > 0) { // 进行三角化，同时判断三角化后三维点数值的有效性
                 auto new_map_point = MapPoint::CreateNewMappoint();
-                pt_world = current_pose_Twc * pt_world; // 将三角化得到的点从相机坐标系转换到世界坐标系
+                // 从相机坐标系转换到世界坐标系
+                pt_world = current_pose_Twc * pt_world;
                 new_map_point->SetPos(pt_world);     // 设置地图点
-                map_->InsertMapPoint(new_map_point); // 将地图点插入地图
 
-                backend_->InsertNewMapPoint(new_map_point); // 将地图点插入后端地图
+                map_->InsertMapPoint(new_map_point); // 将地图点插入地图
                 viewer_->InsertNewMapPoint(new_map_point); // 将地图点插入可视化界面
 
                 current_frame_->features_left_[i]->map_point_ = new_map_point; // 地图点和左右图像特征点匹配
@@ -404,8 +398,8 @@ namespace myslam {
 
         }
         
-        // std::cout << "Triangulated successful with " << cnt_triangulated_pts
-        //           << " map points" << std::endl;
+        std::cout << "Triangulated successful with " << cnt_triangulated_pts
+                  << " map points" << std::endl;
 
         return cnt_triangulated_pts;
     }
@@ -427,13 +421,13 @@ namespace myslam {
             
             Vec3 pworld = Vec3::Zero();
     
-            if (triangulation(poses, points, pworld) && pworld[2] > 0) { // 三角化并判断是否有效
+            if (triangulation(poses, points, pworld) && pworld[2] > 0) // 三角化并判断是否有效
+            {
                 auto new_map_point = MapPoint::CreateNewMappoint();
                 new_map_point->SetPos(pworld);
                 new_map_point->AddObservation(current_frame_->features_left_[i]); // 将左图特征点存储到对应的地图点观测当中
                 new_map_point->AddObservation(current_frame_->features_right_[i]);
 
-                backend_->InsertNewMapPoint(new_map_point); // 将地图点插入后端地图
                 viewer_->InsertNewMapPoint(new_map_point); // 将地图点插入可视化界面
 
                 current_frame_->features_left_[i]->map_point_ = new_map_point;  // 地图点和左右图像特征点匹配
@@ -443,39 +437,52 @@ namespace myslam {
             }
         }
     
-        // std::cout << "Initial map created with " << cnt_init_landmarks
-        //           << " map points" << std::endl;
-    
-        return true;
+        std::cout << "Initial map created with " << cnt_init_landmarks
+                  << " map points" << std::endl;
+        
+        if (cnt_init_landmarks > 50) {
+            return true;
+        }
+        return false;
     }
 
     int Frontend::Track() {
-        current_frame_->SetRelativePose(relative_motion_ * last_frame_->RelativePose()); // relative_motion_为上一帧相对于前一帧的位姿
+        // 恒速模型预测 T_cr_new = T_c-1,c * T_c-1,r
+        if (last_frame_) {
+            current_frame_->SetRelativePose(relative_motion_ * last_frame_->RelativePose());
+        }
         
         LKDetectLastFeatures(); // 光流法追踪特征点进行匹配
 
         num_track_good_ = BACurrentPose(); // BA优化当前位姿，并返回内点数量
 
         if (num_track_good_ > num_features_tracking_good_) {
-            status_ = FrontendStatus::TRACKING_GOOD;
             // std::cout << "Tracking good: " << num_features_tracking_good_ << std::endl;
+            status_ = FrontendStatus::TRACKING_GOOD;
         } else if (num_track_good_ > num_features_tracking_bad_) {
             // std::cout << "Tracking bad." << std::endl;
             status_ = FrontendStatus::TRACKING_BAD;
         } else {
             status_ = FrontendStatus::LOST;
-            std::cout << "Tracking lost, try to relocalize or reinitialize." << std::endl;
+            // std::cout << "Tracking lost, try to relocalize or reinitialize." << std::endl;
         }
 
-        if (status_ == FrontendStatus::TRACKING_GOOD) {
-            // 追踪良好，根据运动量判断是否插入关键帧
-            if (relative_motion_.log().norm() > 0.1) { // 阈值可调
-                current_frame_->SetKeyFrame();
-            }
-        } else if (status_ == FrontendStatus::TRACKING_BAD | status_ == FrontendStatus::LOST) {
+        if (status_ == FrontendStatus::TRACKING_BAD) {
+            // “补充”策略：不清除现有特征点，而是检测新的来补充
+            DetectLeftFeatures();
+            FindRightFeatures();
+            Triangulation();
+            InsertKeyFrame();
+            // ReTrack();
+        } else if (status_ == FrontendStatus::LOST) {
+            // “重置”策略
             ReTrack();
+        } else { // TRACKING_GOOD
+            // 追踪良好，根据运动量判断是否插入关键帧
+            // if (relative_motion_.log().norm() > 0.1) { // 阈值可调
+            //     InsertKeyFrame();
+            // }
         }
-        // 如果状态是 LOST，则不执行任何操作，等待外部重定位或重启
 
         if (status_ != FrontendStatus::LOST) {
             relative_motion_ = current_frame_->RelativePose() * last_frame_->RelativePose().inverse();
@@ -491,14 +498,36 @@ namespace myslam {
         DetectLeftFeatures(); // 重新进行GFTT检测
         FindRightFeatures();
         Triangulation(); // 对关键帧特征点进行三角化
+        InsertKeyFrame(); // 插入关键帧
 
-        // 插入关键帧
-        current_frame_->SetKeyFrame();   // 当前帧设置为关键帧
-        // 可加入一个retrack的通过判断
         // std::cout << "keyframe id:" << current_frame_->keyframe_id_ << std::endl; // 测试用检查关键帧id
         // std::cout << "frame id:" << current_frame_->id_ << std::endl; // 测试用检查帧id
 
         status_ = FrontendStatus::TRACKING_GOOD;
+    }
+
+    void Frontend::InsertKeyFrame() {
+        current_frame_->SetKeyFrame();
+        
+        // 关键：计算并设置新关键帧的绝对位姿
+        if (reference_frame_) {
+            current_frame_->SetPose(current_frame_->RelativePose() * reference_frame_->Pose());
+        }
+        
+        map_->InsertKeyFrame(current_frame_);
+        
+        // 关键：立即更新参考帧，并唤醒其他模块
+        reference_frame_ = current_frame_;
+        // 新的参考帧，其相对位姿是单位矩阵
+        current_frame_->SetRelativePose(SE3());
+
+        backend_->Wake();
+        if (loop_) {
+            loop_->Wake();
+        }
+        if (viewer_) {
+            viewer_->InsertNewKeyFrame(current_frame_);
+        }
     }
 
     void Frontend::Stop() {

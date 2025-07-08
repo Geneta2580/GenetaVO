@@ -23,8 +23,7 @@ namespace myslam {
     }
 
     void Backend::Wake() {
-        std::unique_lock<std::mutex> lock(data_mutex_); // 需要互斥锁
-        map_update_.notify_one(); // 唤醒线程
+        map_update_.notify_one(); // 直接通知，无需加锁
     }
     
     void Backend::Stop() {
@@ -36,27 +35,30 @@ namespace myslam {
 
     void Backend::BackendLoop() { // 后端优化主线程
         while (backend_running_.load()) {
-            std::unique_lock<std::mutex> lock(data_mutex_); // 等待线程被唤醒
-            map_update_.wait(lock);
+            {
+                std::unique_lock<std::mutex> lock(data_mutex_);
+                map_update_.wait(lock);
+            }
+
+            // 在退出循环前，再次检查运行状态
+            if (!backend_running_.load()) {
+                break;
+            }
 
             // 暂停检查点：如果收到暂停请求，则在此等待
-            std::unique_lock<std::mutex> pause_lock(pause_mutex_);
-            resume_cv_.wait(pause_lock, [this] { return !pause_requested_.load(); }); // pause_requested_为false则继续执行
+            {
+                std::unique_lock<std::mutex> pause_lock(pause_mutex_);
+                resume_cv_.wait(pause_lock, [this] { return !pause_requested_.load(); }); // pause_requested_为false则继续执行
+            }
 
             // 在暂停后再次检查，因为线程可能在Stop()中被唤醒
             if (!backend_running_.load()) {
                 break;
             }
 
-            map_->InsertKeyFrame(new_key_frame_);
-            map_->InsertMapPoint(new_map_point_);
+            // 获取地图大锁，准备执行优化
+            std::unique_lock<std::mutex> map_lock(map_->map_update_mutex_);
 
-            // // 当有新的关键帧时，唤醒回环检测    万恶之源！！！！！！！！！！！！！！
-            // if (loop_) {
-            //     loop_->Wake();
-            // }
-
-            /// 后端优化关键帧和地图路标点
             Map::KeyframesType active_kfs = map_->GetActiveKeyFrames();
             Map::LandmarksType active_landmarks = map_->GetActiveMapPoints();
             
@@ -111,7 +113,7 @@ namespace myslam {
         for (auto &landmark : landmarks) {
             if (landmark.second->is_outlier_) continue; // 当BA解出的路标越界
             unsigned long landmark_id = landmark.second->id_;
-            auto observations = landmark.second->GetObs(); // 获取路标点对应的左右特征点值
+            auto observations = landmark.second->GetActiveObs(); // 获取活跃观测
 
             // 如果landmark还没有被加入优化，则新加一个顶点
             if (vertices_landmarks.find(landmark_id) ==
@@ -122,16 +124,12 @@ namespace myslam {
                 v->setMarginalized(true); 
                 
                 // 关键改动：采用ssvio的锚点策略，并进行严格的空指针检查
-                auto obs_list = landmark.second->GetObs();
-                if (!obs_list.empty()) {
-                    // 1. 尝试锁定第一个观测特征
-                    if (auto first_obs_feat = obs_list.front().lock()) {
-                        // 2. 尝试锁定该特征所在的帧
-                        if (auto first_obs_frame = first_obs_feat->frame_.lock()) {
-                            // 3. 只有在前两步都成功后，才安全地进行判断
-                            if (keyframes.find(first_obs_frame->keyframe_id_) == keyframes.end()) {
-                                v->setFixed(true);
-                            }
+                if (!observations.empty()) {
+                    auto feat = observations.front().lock();
+                    if (feat) {
+                        auto frame = feat->frame_.lock();
+                        if (frame && keyframes.find(frame->keyframe_id_) == keyframes.end()) {
+                            v->setFixed(true);
                         }
                     }
                 }
@@ -169,7 +167,8 @@ namespace myslam {
             }
         }
 
-        if (optimizer.edges().empty()) {
+        if (edges_and_features.empty()) {
+            // 如果没有边，意味着当前活跃帧无法观测到任何活跃地图点，优化无意义
             return;
         }
     
@@ -191,7 +190,7 @@ namespace myslam {
             if (inlier_ratio > 0.7) { // 优化良好的点的比例大于50%，直接结束优化
                 break;
             } else { // 优化良好的点的比例小于50%，调整鲁棒核函数阈值 
-                chi2_th *= 2;
+                // chi2_th *= 2;
                 iteration++;
             }
         }
@@ -199,7 +198,17 @@ namespace myslam {
         for (auto &ef : edges_and_features) {
             if (ef.first->chi2() > chi2_th) {
                 ef.second->is_outlier_ = true;
-                ef.second->map_point_.lock()->RemoveObservation(ef.second); // 优化误差大，去除观测
+                auto mappoint = ef.second->map_point_.lock();
+                if (mappoint) { // <-- 关键的非空检查
+                    mappoint->RemoveActiveObservation(ef.second); // 优化误差大，去除活跃观测
+                    mappoint->RemoveObservation(ef.second); // 同时移除总观测
+
+                    if (mappoint->GetObs().empty()) { 
+                        mappoint->is_outlier_ = true;
+                        map_->AddOutlierMapPoint(mappoint->id_);
+                    }
+                }
+                ef.second->map_point_.reset(); // 断开与地图点的关联
             } else {
                 ef.second->is_outlier_ = false;
             }
@@ -211,6 +220,10 @@ namespace myslam {
         for (auto &v : vertices_landmarks) {
             landmarks.at(v.first)->SetPos(v.second->estimate());
         }
+
+        // delete outlier mappoints
+        map_->RemoveAllOutlierMapPoints();
+        map_->RemoveOldActiveMapPoints();
     }
     
 }

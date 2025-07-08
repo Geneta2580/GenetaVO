@@ -1,4 +1,5 @@
 #include "myslam/mappoint.h"
+#include "myslam/feature.h"
 
 namespace myslam {
 
@@ -9,6 +10,34 @@ namespace myslam {
         MapPoint::Ptr new_mappoint(new MapPoint);
         new_mappoint->id_ = factory_id++; // 创建成功+1
         return new_mappoint;
+    }
+
+    void MapPoint::AddObservation(std::shared_ptr<Feature> feature) {
+        std::unique_lock<std::mutex> lck(data_mutex_);
+        observations_.push_back(feature);
+        observed_times_++;
+    }
+
+    void MapPoint::AddActiveObservation(std::shared_ptr<Feature> feature)
+    {
+        std::unique_lock<std::mutex> lck(data_mutex_);
+        active_observations_.push_back(feature);
+        active_observed_times_++;
+    }
+
+    void MapPoint::RemoveActiveObservation(std::shared_ptr<Feature> feature)
+    {
+        std::unique_lock<std::mutex> lck(data_mutex_); 
+        for (auto iter = active_observations_.begin(); iter != active_observations_.end();
+            iter++)
+        {
+            if (iter->lock() == feature)
+            {
+                active_observations_.erase(iter);
+                active_observed_times_--;
+                break;
+            }
+        }
     }
 
     void MapPoint::RemoveObservation(std::shared_ptr<Feature> feat) { // 去掉一个观测点

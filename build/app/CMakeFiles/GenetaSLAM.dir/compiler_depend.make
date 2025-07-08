@@ -351,6 +351,7 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
   /usr/include/c++/11/bits/unique_lock.h \
   /usr/include/c++/11/bits/unique_ptr.h \
   /usr/include/c++/11/bits/unordered_map.h \
+  /usr/include/c++/11/bits/unordered_set.h \
   /usr/include/c++/11/bits/uses_allocator.h \
   /usr/include/c++/11/bits/vector.tcc \
   /usr/include/c++/11/bitset \
@@ -442,6 +443,7 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
   /usr/include/c++/11/type_traits \
   /usr/include/c++/11/typeinfo \
   /usr/include/c++/11/unordered_map \
+  /usr/include/c++/11/unordered_set \
   /usr/include/c++/11/utility \
   /usr/include/c++/11/vector \
   /usr/include/c++/11/version \
@@ -629,85 +631,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
   /usr/include/eigen3/Eigen/src/plugins/MatrixCwiseBinaryOps.h \
   /usr/include/eigen3/Eigen/src/plugins/MatrixCwiseUnaryOps.h \
   /usr/include/eigen3/Eigen/src/plugins/ReshapedMethods.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/Tensor \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/Tensor.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorArgMax.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorAssign.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorBase.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorBlock.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorBroadcasting.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorChipping.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorConcatenation.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorContraction.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorContractionBlocking.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorContractionGpu.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorContractionMapper.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorContractionThreadPool.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorConversion.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorConvolution.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorCostModel.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorCustomOp.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDevice.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceDefault.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceGpu.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceSycl.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceThreadPool.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDimensionList.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorEvalTo.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorEvaluator.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorExpr.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorFFT.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorFixedSize.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorForcedEval.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorForwardDeclarations.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorFunctors.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorGenerator.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorGlobalFunctions.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorIO.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorImagePatch.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorIndexList.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorInflation.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorInitializer.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorIntDiv.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorLayoutSwap.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorMacros.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorMap.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorMeta.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorMorphing.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorPadding.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorPatch.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorRandom.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorReduction.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorReductionGpu.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorRef.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorReverse.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorScan.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorShuffling.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorStorage.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorStriding.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorTrace.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorTraits.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorUInt128.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorVolumePatch.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/util/CXX11Meta.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/util/CXX11Workarounds.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/util/EmulateArray.h \
-  /usr/include/eigen3/unsupported/Eigen/CXX11/src/util/MaxSizeVector.h \
-  /usr/include/eigen3/unsupported/Eigen/SpecialFunctions \
-  /usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsArrayAPI.h \
-  /usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsBFloat16.h \
-  /usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsFunctors.h \
-  /usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsHalf.h \
-  /usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsImpl.h \
-  /usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsPacketMath.h \
-  /usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsArrayAPI.h \
-  /usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsBFloat16.h \
-  /usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsFunctors.h \
-  /usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsHalf.h \
-  /usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsImpl.h \
-  /usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsPacketMath.h \
   /usr/include/endian.h \
   /usr/include/epoxy/common.h \
   /usr/include/epoxy/gl.h \
@@ -753,7 +676,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
   /usr/include/opencv4/opencv2/core/cvstd.hpp \
   /usr/include/opencv4/opencv2/core/cvstd.inl.hpp \
   /usr/include/opencv4/opencv2/core/cvstd_wrapper.hpp \
-  /usr/include/opencv4/opencv2/core/eigen.hpp \
   /usr/include/opencv4/opencv2/core/fast_math.hpp \
   /usr/include/opencv4/opencv2/core/hal/interface.h \
   /usr/include/opencv4/opencv2/core/mat.hpp \
@@ -1173,6 +1095,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
   /usr/local/include/sophus/types.hpp
 
 
+/usr/local/include/sophus/types.hpp:
+
 /usr/local/include/sophus/rotation_matrix.hpp:
 
 /usr/local/include/pangolin/windowing/window.h:
@@ -1209,6 +1133,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/local/include/pangolin/utils/is_streamable.h:
 
+/usr/local/include/pangolin/utils/file_utils.h:
+
 /usr/local/include/pangolin/utils/file_extension.h:
 
 /usr/local/include/pangolin/utils/assert.h:
@@ -1229,6 +1155,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/local/include/pangolin/gl/gltext.h:
 
+/usr/local/include/pangolin/gl/glstate.h:
+
 /usr/local/include/pangolin/gl/glsl.h:
 
 /usr/local/include/pangolin/gl/glplatform.h:
@@ -1248,6 +1176,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/local/include/pangolin/display/attach.h:
 
 /usr/local/include/pangolin/compat/type_traits.h:
+
+/usr/local/include/g2o/types/slam3d/vertex_se3.h:
 
 /usr/local/include/g2o/types/slam3d/se3quat.h:
 
@@ -1312,6 +1242,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/local/include/g2o/core/matrix_operations.h:
 
 /usr/local/include/g2o/core/io_helper.h:
+
+/usr/local/include/g2o/core/block_solver.h:
 
 /usr/local/include/g2o/core/base_unary_edge.h:
 
@@ -1465,128 +1397,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/x86_64-linux-gnu/bits/floatn.h:
 
-/usr/include/x86_64-linux-gnu/bits/fcntl2.h:
-
-/usr/local/include/g2o/core/dynamic_aligned_buffer.hpp:
-
-/usr/include/x86_64-linux-gnu/bits/fcntl.h:
-
-/usr/include/x86_64-linux-gnu/bits/fcntl-linux.h:
-
-/usr/include/x86_64-linux-gnu/bits/endian.h:
-
-/usr/include/x86_64-linux-gnu/bits/cpu-set.h:
-
-/usr/include/x86_64-linux-gnu/bits/atomic_wide_counter.h:
-
-/usr/include/x86_64-linux-gnu/asm/unistd_64.h:
-
-/usr/include/x86_64-linux-gnu/asm/types.h:
-
-/usr/include/x86_64-linux-gnu/asm/posix_types_64.h:
-
-/usr/include/x86_64-linux-gnu/asm/errno.h:
-
-/usr/include/x86_64-linux-gnu/asm/bitsperlong.h:
-
-/usr/include/wctype.h:
-
-/usr/include/wchar.h:
-
-/usr/include/x86_64-linux-gnu/bits/stdio.h:
-
-/usr/include/time.h:
-
-/usr/include/strings.h:
-
-/usr/include/string.h:
-
-/usr/include/stdio.h:
-
-/usr/local/include/g2o/types/sba/vertex_intrinsics.h:
-
-/usr/include/stdint.h:
-
-/usr/include/spdlog/tweakme.h:
-
-/usr/include/spdlog/spdlog.h:
-
-/usr/include/spdlog/spdlog-inl.h:
-
-/usr/include/spdlog/sinks/sink.h:
-
-/usr/lib/gcc/x86_64-linux-gnu/11/include/syslimits.h:
-
-/usr/include/spdlog/sinks/sink-inl.h:
-
-/usr/include/spdlog/sinks/ansicolor_sink-inl.h:
-
-/usr/include/spdlog/logger-inl.h:
-
-/usr/include/spdlog/fmt/fmt.h:
-
-/usr/local/include/pangolin/plot/plotter.h:
-
-/usr/include/spdlog/pattern_formatter-inl.h:
-
-/usr/include/spdlog/details/registry.h:
-
-/usr/include/spdlog/details/registry-inl.h:
-
-/usr/include/spdlog/details/periodic_worker.h:
-
-/usr/include/spdlog/details/os.h:
-
-/usr/include/spdlog/details/log_msg_buffer.h:
-
-/usr/include/spdlog/details/log_msg_buffer-inl.h:
-
-/usr/local/include/g2o/core/block_solver.hpp:
-
-/usr/include/spdlog/details/log_msg.h:
-
-/usr/include/spdlog/details/log_msg-inl.h:
-
-/usr/include/spdlog/details/fmt_helper.h:
-
-/usr/include/spdlog/details/console_globals.h:
-
-/usr/include/spdlog/details/circular_q.h:
-
-/usr/include/spdlog/details/backtracer.h:
-
-/usr/include/spdlog/common.h:
-
-/usr/include/spdlog/common-inl.h:
-
-/usr/include/x86_64-linux-gnu/bits/setjmp.h:
-
-/usr/include/sched.h:
-
-/usr/include/opencv4/opencv2/video.hpp:
-
-/usr/include/opencv4/opencv2/stitching/warpers.hpp:
-
-/usr/include/opencv4/opencv2/stitching/detail/warpers.hpp:
-
-/usr/include/opencv4/opencv2/stitching/detail/seam_finders.hpp:
-
-/usr/local/include/g2o/core/base_edge.h:
-
-/usr/include/x86_64-linux-gnu/bits/types/struct_statx_timestamp.h:
-
-/usr/include/opencv4/opencv2/stitching/detail/motion_estimators.hpp:
-
-/usr/include/opencv4/opencv2/stitching/detail/matchers.hpp:
-
-/usr/include/opencv4/opencv2/stitching/detail/camera.hpp:
-
-/usr/include/opencv4/opencv2/stitching/detail/blenders.hpp:
-
-/usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h:
-
-/usr/include/c++/11/pstl/glue_algorithm_defs.h:
-
 /usr/include/c++/11/pstl/execution_defs.h:
 
 /usr/include/eigen3/Eigen/src/Core/MapBase.h:
@@ -1607,9 +1417,9 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/c++/11/bits/stl_vector.h:
 
-/usr/include/boost/config/user.hpp:
+/usr/include/c++/11/ext/numeric_traits.h:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorReduction.h:
+/usr/include/boost/config/user.hpp:
 
 /usr/include/c++/11/exception:
 
@@ -1627,8 +1437,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/c++/11/cwctype:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorContractionMapper.h:
-
 /usr/include/x86_64-linux-gnu/sys/stat.h:
 
 /usr/include/linux/stat.h:
@@ -1638,8 +1446,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/eigen3/Eigen/src/Core/Diagonal.h:
 
 /usr/include/c++/11/cfloat:
-
-/usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsFunctors.h:
 
 /usr/include/boost/preprocessor/list/fold_right.hpp:
 
@@ -1741,8 +1547,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/c++/11/ext/string_conversions.h:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h:
-
 /usr/include/c++/11/bits/std_thread.h:
 
 /usr/include/c++/11/bits/std_function.h:
@@ -1750,6 +1554,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/c++/11/bits/std_abs.h:
 
 /usr/include/c++/11/bits/sstream.tcc:
+
+/usr/include/c++/11/bits/specfun.h:
 
 /usr/include/c++/11/any:
 
@@ -1762,6 +1568,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/opencv4/opencv2/core/version.hpp:
 
 /usr/include/c++/11/bits/random.tcc:
+
+/usr/include/spdlog/details/console_globals.h:
 
 /usr/include/boost/format/detail/compat_workarounds.hpp:
 
@@ -1779,7 +1587,7 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Core/util/Constants.h:
 
-/usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsBFloat16.h:
+/usr/include/stdio.h:
 
 /usr/include/c++/11/bits/ostream.tcc:
 
@@ -1787,7 +1595,7 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/c++/11/debug/assertions.h:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorContractionBlocking.h:
+/usr/include/spdlog/details/os.h:
 
 /usr/local/include/g2o/core/sparse_block_matrix_diagonal.h:
 
@@ -1809,7 +1617,13 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/boost/preprocessor/control/iif.hpp:
 
+/usr/include/opencv4/opencv2/stitching/detail/warpers.hpp:
+
 /usr/include/c++/11/bits/locale_classes.tcc:
+
+/usr/include/c++/11/deque:
+
+/usr/include/c++/11/bits/locale_classes.h:
 
 /usr/include/opencv4/opencv2/features2d.hpp:
 
@@ -1827,6 +1641,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/c++/11/pstl/pstl_config.h:
 
+/usr/include/spdlog/spdlog-inl.h:
+
 /usr/include/c++/11/bits/exception.h:
 
 /usr/include/boost/type_traits/alignment_of.hpp:
@@ -1837,11 +1653,9 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Core/arch/Default/Half.h:
 
-/usr/include/pthread.h:
-
-/usr/include/c++/11/bits/hash_bytes.h:
-
 /usr/include/c++/11/math.h:
+
+/usr/include/boost/type_traits/remove_const.hpp:
 
 /usr/include/c++/11/bits/functional_hash.h:
 
@@ -1875,12 +1689,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/c++/11/bits/cpp_type_traits.h:
 
-/usr/local/include/g2o/core/base_vertex.hpp:
-
-/usr/include/x86_64-linux-gnu/asm/unistd.h:
-
-/usr/include/glog/logging.h:
-
 /usr/include/c++/11/bits/concept_check.h:
 
 /usr/include/boost/type_traits/is_const.hpp:
@@ -1909,10 +1717,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/boost/checked_delete.hpp:
 
-/usr/local/include/g2o/core/marginal_covariance_cholesky.h:
-
-/usr/include/boost/type_traits/is_pod.hpp:
-
 /usr/include/limits.h:
 
 /usr/local/include/g2o/core/base_fixed_sized_edge.h:
@@ -1929,13 +1733,11 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Core/VectorBlock.h:
 
-/usr/include/x86_64-linux-gnu/asm/posix_types.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h:
-
 /usr/include/opencv4/opencv2/flann.hpp:
 
 /usr/include/c++/11/array:
+
+/usr/include/boost/utility/result_of.hpp:
 
 /usr/include/boost/utility/enable_if.hpp:
 
@@ -1951,23 +1753,23 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/c++/11/tr1/poly_laguerre.tcc:
 
+/usr/include/boost/type_traits/remove_cv.hpp:
+
 /usr/local/include/pangolin/pangolin.h:
 
 /usr/include/boost/type_traits/remove_bounds.hpp:
 
 /usr/include/boost/type_traits/is_volatile.hpp:
 
+/usr/include/c++/11/bits/hash_bytes.h:
+
+/usr/include/pthread.h:
+
 /usr/include/c++/11/cstdio:
 
 /usr/include/opencv4/opencv2/ml/ml.inl.hpp:
 
 /usr/include/boost/type_traits/is_void.hpp:
-
-/usr/include/x86_64-linux-gnu/bits/endianness.h:
-
-/usr/include/eigen3/Eigen/src/Core/arch/Default/GenericPacketMathFunctionsFwd.h:
-
-/usr/include/eigen3/Eigen/src/QR/ColPivHouseholderQR.h:
 
 /usr/include/c++/11/bits/cxxabi_forced.h:
 
@@ -2011,6 +1813,12 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/boost/format/detail/msvc_disambiguater.hpp:
 
+/usr/include/eigen3/Eigen/src/Core/arch/Default/GenericPacketMathFunctionsFwd.h:
+
+/usr/include/eigen3/Eigen/src/QR/ColPivHouseholderQR.h:
+
+/usr/include/x86_64-linux-gnu/bits/endianness.h:
+
 /usr/include/boost/type_traits/conditional.hpp:
 
 /usr/include/c++/11/cassert:
@@ -2035,6 +1843,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/opencv4/opencv2/highgui.hpp:
 
+/usr/include/x86_64-linux-gnu/bits/endian.h:
+
 /usr/include/c++/11/bits/shared_ptr_base.h:
 
 /usr/include/boost/type_traits/is_nothrow_move_assignable.hpp:
@@ -2042,6 +1852,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/c++/11/bits/cxxabi_init_exception.h:
 
 /usr/include/opencv4/opencv2/flann/lsh_table.h:
+
+/usr/include/boost/type_traits/is_array.hpp:
 
 /usr/include/boost/preprocessor/detail/auto_rec.hpp:
 
@@ -2056,8 +1868,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/boost/none.hpp:
 
 /usr/include/boost/core/addressof.hpp:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorStriding.h:
 
 /usr/include/boost/type_traits/is_enum.hpp:
 
@@ -2075,6 +1885,10 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/boost/move/detail/config_end.hpp:
 
+/usr/lib/gcc/x86_64-linux-gnu/11/include/syslimits.h:
+
+/usr/include/spdlog/sinks/sink-inl.h:
+
 /usr/local/include/pangolin/utils/format_string.h:
 
 /usr/include/c++/11/bits/functexcept.h:
@@ -2082,8 +1896,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/c++/11/bits/list.tcc:
 
 /usr/include/boost/type_traits/remove_extent.hpp:
-
-/usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsArrayAPI.h:
 
 /usr/include/c++/11/ext/aligned_buffer.h:
 
@@ -2105,21 +1917,21 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/boost/cstdint.hpp:
 
-/usr/include/c++/11/ext/numeric_traits.h:
-
-/usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsArrayAPI.h:
-
 /usr/include/boost/format/free_funcs.hpp:
 
 /usr/include/eigen3/Eigen/src/Core/Map.h:
+
+/usr/local/include/g2o/core/marginal_covariance_cholesky.h:
+
+/usr/include/boost/type_traits/is_pod.hpp:
+
+/usr/include/c++/11/bits/unordered_set.h:
 
 /usr/include/c++/11/bits/hashtable.h:
 
 /usr/include/boost/optional/detail/optional_trivially_copyable_base.hpp:
 
 /usr/include/boost/type_traits/is_integral.hpp:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorArgMax.h:
 
 /usr/include/boost/format/detail/unset_macros.hpp:
 
@@ -2133,6 +1945,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/boost/preprocessor/config/config.hpp:
 
+/usr/include/spdlog/details/periodic_worker.h:
+
 /usr/include/x86_64-linux-gnu/bits/posix1_lim.h:
 
 /usr/include/boost/config/detail/select_stdlib_config.hpp:
@@ -2143,6 +1957,10 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/opencv4/opencv2/core/mat.hpp:
 
+/usr/local/include/g2o/core/dynamic_aligned_buffer.hpp:
+
+/usr/include/x86_64-linux-gnu/bits/fcntl.h:
+
 /usr/include/boost/version.hpp:
 
 /usr/include/boost/move/detail/type_traits.hpp:
@@ -2150,8 +1968,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/boost/static_assert.hpp:
 
 /home/geneta/Project/geneta_slam/app/run.cpp:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorGlobalFunctions.h:
 
 /usr/local/include/pangolin/gl/glvbo.h:
 
@@ -2183,8 +1999,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/boost/move/traits.hpp:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/util/CXX11Workarounds.h:
-
 /usr/include/boost/type_traits/enable_if.hpp:
 
 /usr/include/boost/optional/detail/optional_factory_support.hpp:
@@ -2209,23 +2023,19 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/boost/preprocessor/cat.hpp:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorReverse.h:
-
 /usr/include/c++/11/bits/alloc_traits.h:
 
 /home/geneta/Project/geneta_slam/include/myslam/algorithm.h:
 
 /usr/include/boost/preprocessor/slot/detail/shared.hpp:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorGenerator.h:
-
-/usr/include/eigen3/unsupported/Eigen/SpecialFunctions:
-
 /usr/local/include/g2o/core/hyper_graph.h:
 
 /usr/include/eigen3/Eigen/src/Core/Fuzzy.h:
 
 /usr/include/eigen3/Eigen/src/Geometry/AngleAxis.h:
+
+/usr/include/x86_64-linux-gnu/asm/errno.h:
 
 /usr/include/boost/type.hpp:
 
@@ -2241,6 +2051,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Core/products/GeneralMatrixMatrixTriangular.h:
 
+/usr/include/opencv4/opencv2/core/operations.hpp:
+
 /usr/include/opencv4/opencv2/video/tracking.hpp:
 
 /home/geneta/Project/geneta_slam/include/myslam/map.h:
@@ -2249,33 +2061,13 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/boost/preprocessor/variadic/size.hpp:
 
-/usr/include/stdc-predef.h:
-
-/usr/include/eigen3/Eigen/src/Core/functors/AssignmentFunctors.h:
-
 /usr/include/eigen3/Eigen/src/Geometry/EulerAngles.h:
 
 /usr/include/c++/11/functional:
 
-/usr/local/include/g2o/types/sba/edge_sba_scale.h:
-
-/usr/include/spdlog/version.h:
-
-/usr/include/c++/11/ostream:
-
-/usr/include/boost/preprocessor/repetition/enum_trailing_params.hpp:
-
-/usr/include/spdlog/formatter.h:
-
-/usr/include/c++/11/cmath:
-
 /usr/include/x86_64-linux-gnu/bits/errno.h:
 
 /usr/include/eigen3/Eigen/src/plugins/ArrayCwiseBinaryOps.h:
-
-/usr/local/include/pangolin/utils/file_utils.h:
-
-/usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsBFloat16.h:
 
 /usr/include/c++/11/fstream:
 
@@ -2284,6 +2076,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/c++/11/shared_mutex:
 
 /home/geneta/Project/geneta_slam/Thirdparty/DBow3/src/QueryResults.h:
+
+/usr/include/x86_64-linux-gnu/asm/posix_types_64.h:
 
 /usr/include/c++/11/codecvt:
 
@@ -2335,19 +2129,23 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/boost/type_traits/detail/config.hpp:
 
+/usr/local/include/pangolin/gl/gl.h:
+
+/usr/include/c++/11/bits/nested_exception.h:
+
+/usr/include/c++/11/bits/string_view.tcc:
+
 /usr/include/boost/none_t.hpp:
 
 /usr/include/opencv4/opencv2/core/cuda_types.hpp:
+
+/usr/include/spdlog/details/circular_q.h:
 
 /usr/include/eigen3/Eigen/src/Core/ArithmeticSequence.h:
 
 /home/geneta/Project/geneta_slam/include/myslam/dataset.h:
 
 /usr/include/c++/11/bits/locale_facets_nonio.tcc:
-
-/usr/include/boost/type_traits/remove_const.hpp:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorLayoutSwap.h:
 
 /usr/include/boost/type_traits/is_pointer.hpp:
 
@@ -2363,6 +2161,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/c++/11/cerrno:
 
+/usr/include/spdlog/details/backtracer.h:
+
 /usr/include/alloca.h:
 
 /usr/include/c++/11/bits/basic_ios.h:
@@ -2376,6 +2176,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/local/include/pangolin/utils/signal_slot.h:
 
 /usr/include/boost/format/detail/workarounds_stlport.hpp:
+
+/usr/include/c++/11/unordered_set:
 
 /usr/include/asm-generic/errno-base.h:
 
@@ -2391,12 +2193,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/boost/smart_ptr/detail/spinlock_pool.hpp:
 
-/usr/lib/gcc/x86_64-linux-gnu/11/include/emmintrin.h:
-
-/usr/include/spdlog/pattern_formatter.h:
-
-/usr/include/asm-generic/errno.h:
-
 /usr/include/asm-generic/bitsperlong.h:
 
 /usr/include/eigen3/Eigen/src/misc/Image.h:
@@ -2404,10 +2200,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/boost/move/core.hpp:
 
 /usr/include/boost/config/detail/select_compiler_config.hpp:
-
-/usr/include/spdlog/details/null_mutex.h:
-
-/usr/include/boost/core/explicit_operator_bool.hpp:
 
 /usr/include/c++/11/cstddef:
 
@@ -2417,6 +2209,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Core/Assign.h:
 
+/usr/include/opencv4/opencv2/calib3d.hpp:
+
 /usr/include/x86_64-linux-gnu/bits/posix2_lim.h:
 
 /usr/include/boost/preprocessor/iteration/iterate.hpp:
@@ -2424,6 +2218,10 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/boost/format/detail/workarounds_gcc-2_95.hpp:
 
 /usr/include/eigen3/Eigen/src/Geometry/AlignedBox.h:
+
+/usr/include/x86_64-linux-gnu/bits/stdio.h:
+
+/usr/include/time.h:
 
 /home/geneta/Project/geneta_slam/include/myslam/g2o_param.h:
 
@@ -2440,6 +2238,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/c++/11/bits/stl_algobase.h:
 
 /usr/include/eigen3/Eigen/src/Core/products/GeneralBlockPanelKernel.h:
+
+/usr/include/spdlog/details/log_msg-inl.h:
 
 /usr/include/boost/assert.hpp:
 
@@ -2461,15 +2261,13 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/boost/optional/bad_optional_access.hpp:
 
+/usr/local/include/pangolin/plot/plotter.h:
+
+/usr/include/spdlog/pattern_formatter-inl.h:
+
+/usr/include/spdlog/details/registry.h:
+
 /usr/include/c++/11/climits:
-
-/usr/include/unistd.h:
-
-/usr/include/spdlog/sinks/ansicolor_sink.h:
-
-/usr/include/boost/preprocessor/iteration/detail/bounds/upper1.hpp:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorConversion.h:
 
 /usr/include/boost/type_traits/detail/yes_no_type.hpp:
 
@@ -2517,8 +2315,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/boost/config.hpp:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceGpu.h:
-
 /usr/include/boost/smart_ptr/detail/yield_k.hpp:
 
 /usr/include/opencv4/opencv2/core/fast_math.hpp:
@@ -2533,6 +2329,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Core/CoreIterators.h:
 
+/usr/include/spdlog/common.h:
+
 /usr/local/include/pangolin/image/memcpy.h:
 
 /usr/include/c++/11/bits/stl_tree.h:
@@ -2543,7 +2341,11 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/opencv4/opencv2/photo.hpp:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorImagePatch.h:
+/usr/lib/gcc/x86_64-linux-gnu/11/include/emmintrin.h:
+
+/usr/include/asm-generic/errno.h:
+
+/usr/include/spdlog/pattern_formatter.h:
 
 /usr/include/boost/preprocessor/array/data.hpp:
 
@@ -2556,6 +2358,10 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/opencv4/opencv2/flann/lsh_index.h:
 
 /usr/include/opencv4/opencv2/core/cvstd.hpp:
+
+/usr/local/include/g2o/core/block_solver.hpp:
+
+/usr/include/spdlog/details/log_msg.h:
 
 /usr/include/boost/preprocessor/facilities/expand.hpp:
 
@@ -2571,19 +2377,19 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Geometry/Scaling.h:
 
-/usr/include/spdlog/details/periodic_worker-inl.h:
-
-/usr/include/eigen3/Eigen/src/misc/Kernel.h:
-
 /usr/include/c++/11/bits/stl_multiset.h:
 
 /usr/include/boost/preprocessor/logical/compl.hpp:
 
 /usr/include/eigen3/Eigen/src/plugins/ArrayCwiseUnaryOps.h:
 
+/usr/include/x86_64-linux-gnu/bits/atomic_wide_counter.h:
+
 /usr/include/c++/11/clocale:
 
 /usr/include/boost/type_traits/is_base_of.hpp:
+
+/usr/include/boost/type_traits/is_arithmetic.hpp:
 
 /usr/include/boost/preprocessor/facilities/empty.hpp:
 
@@ -2601,15 +2407,11 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorChipping.h:
-
 /usr/include/c++/11/bits/shared_ptr_atomic.h:
 
 /usr/include/boost/preprocessor/control/if.hpp:
 
 /usr/include/eigen3/Eigen/src/Core/CwiseUnaryOp.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDevice.h:
 
 /usr/include/c++/11/ext/new_allocator.h:
 
@@ -2663,6 +2465,10 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/Cholesky:
 
+/usr/include/eigen3/Eigen/src/Geometry/Umeyama.h:
+
+/usr/include/boost/preprocessor/list/fold_left.hpp:
+
 /usr/include/boost/preprocessor/list/detail/fold_right.hpp:
 
 /usr/include/boost/config/compiler/gcc.hpp:
@@ -2700,6 +2506,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/epoxy/gl.h:
 
 /usr/include/boost/type_traits/intrinsics.hpp:
+
+/usr/include/spdlog/details/fmt_helper.h:
 
 /usr/include/GL/gl.h:
 
@@ -2755,11 +2563,7 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/boost/smart_ptr/detail/sp_thread_pause.hpp:
 
-/usr/include/opencv4/opencv2/stitching/detail/warpers_inl.hpp:
-
-/usr/include/boost/utility/base_from_member.hpp:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceSycl.h:
+/usr/include/strings.h:
 
 /home/geneta/Project/geneta_slam/include/myslam/feature.h:
 
@@ -2775,9 +2579,13 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/c++/11/bits/stl_multimap.h:
 
-/usr/include/c++/11/pstl/glue_memory_defs.h:
+/usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorMeta.h:
+/usr/include/c++/11/pstl/glue_algorithm_defs.h:
+
+/usr/include/x86_64-linux-gnu/asm/types.h:
+
+/usr/include/c++/11/pstl/glue_memory_defs.h:
 
 /usr/include/c++/11/random:
 
@@ -2787,9 +2595,11 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/c++/11/set:
 
-/usr/include/c++/11/stack:
+/usr/include/c++/11/cmath:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorFunctors.h:
+/usr/include/spdlog/formatter.h:
+
+/usr/include/c++/11/stack:
 
 /usr/include/x86_64-linux-gnu/bits/types/__fpos64_t.h:
 
@@ -2798,10 +2608,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/eigen3/Eigen/src/Core/SolveTriangular.h:
 
 /usr/include/c++/11/string:
-
-/usr/local/include/g2o/core/block_solver.h:
-
-/usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsPacketMath.h:
 
 /usr/include/x86_64-linux-gnu/bits/stdio_lim.h:
 
@@ -2823,17 +2629,9 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/c++/11/tr1/hypergeometric.tcc:
 
-/usr/local/include/pangolin/var/varwrapper.h:
-
-/usr/include/spdlog/details/synchronous_factory.h:
-
-/usr/include/eigen3/Eigen/src/Core/util/Memory.h:
-
 /usr/include/eigen3/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h:
 
 /usr/include/c++/11/tr1/modified_bessel_func.tcc:
-
-/usr/include/opencv4/opencv2/core/eigen.hpp:
 
 /usr/include/opencv4/opencv2/core/vsx_utils.hpp:
 
@@ -2844,10 +2642,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/spdlog/details/os-inl.h:
 
 /usr/include/c++/11/type_traits:
-
-/usr/include/c++/11/bits/specfun.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorVolumePatch.h:
 
 /usr/include/boost/preprocessor/repetition/enum_shifted_params.hpp:
 
@@ -2893,21 +2687,11 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Core/ArrayBase.h:
 
-/usr/include/opencv4/opencv2/stitching/detail/util.hpp:
-
-/usr/include/eigen3/Eigen/src/misc/RealSvd2x2.h:
-
-/usr/include/eigen3/Eigen/src/Eigenvalues/RealQZ.h:
-
-/usr/local/include/sophus/types.hpp:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorForwardDeclarations.h:
-
 /usr/include/eigen3/Eigen/src/Core/AssignEvaluator.h:
 
 /usr/include/linux/limits.h:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorMorphing.h:
+/usr/include/eigen3/Eigen/src/Core/Block.h:
 
 /usr/include/eigen3/Eigen/src/Core/DenseStorage.h:
 
@@ -2943,6 +2727,10 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Core/DenseCoeffsBase.h:
 
+/usr/include/x86_64-linux-gnu/sys/syscall.h:
+
+/usr/include/eigen3/Eigen/src/Core/Dot.h:
+
 /usr/include/eigen3/Eigen/src/Core/EigenBase.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/11/include/xmmintrin.h:
@@ -2950,12 +2738,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/x86_64-linux-gnu/bits/mathcalls.h:
 
 /usr/include/eigen3/Eigen/src/Core/SolverBase.h:
-
-/usr/include/boost/utility/result_of.hpp:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/util/MaxSizeVector.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorIndexList.h:
 
 /usr/include/eigen3/Eigen/src/Core/GeneralProduct.h:
 
@@ -2965,6 +2747,10 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Core/GenericPacketMath.h:
 
+/usr/include/x86_64-linux-gnu/asm/bitsperlong.h:
+
+/usr/include/x86_64-linux-gnu/bits/fcntl2.h:
+
 /usr/include/c++/11/bits/ios_base.h:
 
 /usr/include/boost/format/exceptions.hpp:
@@ -2973,17 +2759,13 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Core/GlobalFunctions.h:
 
-/usr/local/include/pangolin/gl/gl.h:
-
-/usr/include/c++/11/bits/nested_exception.h:
-
-/usr/include/c++/11/bits/string_view.tcc:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDimensionList.h:
+/usr/include/opencv4/opencv2/stitching/detail/camera.hpp:
 
 /usr/include/eigen3/Eigen/src/Core/IO.h:
 
 /usr/include/eigen3/Eigen/src/Core/MathFunctions.h:
+
+/usr/include/eigen3/Eigen/src/Core/MathFunctionsImpl.h:
 
 /usr/include/eigen3/Eigen/src/Core/Matrix.h:
 
@@ -2992,8 +2774,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/stdlib.h:
 
 /usr/include/eigen3/Eigen/src/Core/Random.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorContraction.h:
 
 /usr/local/include/g2o/types/slam3d/vertex_pointxyz.h:
 
@@ -3006,6 +2786,10 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/opencv4/opencv2/flann/dynamic_bitset.h:
 
 /usr/include/eigen3/Eigen/src/Core/PermutationMatrix.h:
+
+/usr/local/include/g2o/types/sba/vertex_intrinsics.h:
+
+/usr/include/stdint.h:
 
 /usr/include/c++/11/bits/stl_construct.h:
 
@@ -3022,8 +2806,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/local/include/g2o/types/sba/sbacam.h:
 
 /usr/include/eigen3/Eigen/src/Core/Redux.h:
-
-/usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsImpl.h:
 
 /usr/include/eigen3/Eigen/src/Core/Ref.h:
 
@@ -3063,10 +2845,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Core/Transpose.h:
 
-/usr/local/include/pangolin/gl/glstate.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorEvaluator.h:
-
 /usr/include/boost/smart_ptr/detail/spinlock_gcc_atomic.hpp:
 
 /usr/include/eigen3/Eigen/src/Core/TriangularMatrix.h:
@@ -3075,27 +2853,17 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Core/Visitor.h:
 
-/usr/include/opencv4/opencv2/videoio.hpp:
-
 /usr/include/c++/11/bits/random.h:
+
+/usr/include/opencv4/opencv2/videoio.hpp:
 
 /usr/include/eigen3/Eigen/src/Core/arch/Default/ConjHelper.h:
 
 /usr/include/eigen3/Eigen/src/Core/arch/Default/GenericPacketMathFunctions.h:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/Tensor:
-
 /usr/include/x86_64-linux-gnu/bits/select2.h:
 
 /usr/include/eigen3/Eigen/src/Core/arch/Default/TypeCasting.h:
-
-/usr/include/x86_64-linux-gnu/bits/getopt_core.h:
-
-/usr/include/opencv4/opencv2/stitching/detail/util_inl.hpp:
-
-/usr/include/boost/preprocessor/repetition/enum_params.hpp:
-
-/usr/include/opencv4/opencv2/flann/kmeans_index.h:
 
 /usr/include/opencv4/opencv2/video/background_segm.hpp:
 
@@ -3105,13 +2873,13 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Core/arch/SSE/TypeCasting.h:
 
+/usr/include/spdlog/tweakme.h:
+
 /usr/include/eigen3/Eigen/src/Core/functors/BinaryFunctors.h:
 
 /usr/include/eigen3/Eigen/src/Core/functors/NullaryFunctors.h:
 
 /usr/include/eigen3/Eigen/src/Core/functors/StlFunctors.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorAssign.h:
 
 /usr/include/asm-generic/types.h:
 
@@ -3120,10 +2888,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/eigen3/Eigen/src/Core/functors/TernaryFunctors.h:
 
 /usr/include/eigen3/Eigen/src/Core/util/Meta.h:
-
-/usr/include/boost/type_traits/is_array.hpp:
-
-/usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsImpl.h:
 
 /usr/include/eigen3/Eigen/src/Core/functors/UnaryFunctors.h:
 
@@ -3134,12 +2898,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/eigen3/Eigen/src/Core/products/SelfadjointRank2Update.h:
 
 /usr/include/eigen3/Eigen/src/Core/products/TriangularMatrixMatrix.h:
-
-/usr/include/c++/11/deque:
-
-/usr/include/c++/11/bits/locale_classes.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorPatch.h:
 
 /usr/include/eigen3/Eigen/src/Core/products/TriangularMatrixVector.h:
 
@@ -3169,11 +2927,11 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Core/util/XprHelper.h:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorContractionThreadPool.h:
-
 /usr/include/boost/utility/compare_pointees.hpp:
 
 /usr/include/eigen3/Eigen/src/Eigenvalues/ComplexEigenSolver.h:
+
+/usr/include/x86_64-linux-gnu/bits/fcntl-linux.h:
 
 /usr/include/eigen3/Eigen/src/Eigenvalues/ComplexSchur.h:
 
@@ -3193,11 +2951,19 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Eigenvalues/Tridiagonalization.h:
 
+/usr/include/eigen3/Eigen/src/Geometry/Hyperplane.h:
+
+/usr/include/spdlog/details/log_msg_buffer-inl.h:
+
+/usr/include/x86_64-linux-gnu/asm/posix_types.h:
+
 /usr/include/eigen3/Eigen/src/Geometry/OrthoMethods.h:
 
 /usr/include/opencv4/opencv2/core/base.hpp:
 
 /usr/include/eigen3/Eigen/src/Geometry/ParametrizedLine.h:
+
+/usr/include/spdlog/logger-inl.h:
 
 /usr/include/eigen3/Eigen/src/Geometry/Quaternion.h:
 
@@ -3217,6 +2983,12 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/Jacobi/Jacobi.h:
 
+/usr/local/include/pangolin/var/varwrapper.h:
+
+/usr/include/eigen3/Eigen/src/Core/util/Memory.h:
+
+/usr/include/spdlog/details/synchronous_factory.h:
+
 /usr/include/eigen3/Eigen/src/Core/Transpositions.h:
 
 /usr/include/c++/11/tr1/legendre_function.tcc:
@@ -3225,15 +2997,17 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/LU/FullPivLU.h:
 
+/usr/include/wctype.h:
+
 /usr/include/boost/format/internals.hpp:
 
 /usr/include/eigen3/Eigen/src/QR/CompleteOrthogonalDecomposition.h:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorBase.h:
-
 /usr/include/eigen3/Eigen/src/Core/Inverse.h:
 
 /usr/include/eigen3/Eigen/src/QR/HouseholderQR.h:
+
+/usr/include/opencv4/opencv2/stitching/detail/seam_finders.hpp:
 
 /usr/include/eigen3/Eigen/src/SVD/BDCSVD.h:
 
@@ -3257,117 +3031,9 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/eigen3/Eigen/src/plugins/MatrixCwiseUnaryOps.h:
 
-/usr/include/eigen3/Eigen/src/Geometry/Umeyama.h:
-
-/usr/include/boost/preprocessor/list/fold_left.hpp:
-
-/usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsHalf.h:
+/usr/include/spdlog/spdlog.h:
 
 /usr/include/eigen3/Eigen/src/plugins/ReshapedMethods.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/Tensor.h:
-
-/usr/local/include/g2o/types/slam3d/vertex_se3.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorBlock.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorTrace.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorBroadcasting.h:
-
-/usr/include/x86_64-linux-gnu/bits/environments.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorConcatenation.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorContractionGpu.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorConvolution.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorCostModel.h:
-
-/usr/include/eigen3/Eigen/src/Geometry/Hyperplane.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorCustomOp.h:
-
-/usr/include/opencv4/opencv2/calib3d.hpp:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceDefault.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceThreadPool.h:
-
-/usr/include/eigen3/Eigen/src/Core/Block.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorEvalTo.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorExpr.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorFFT.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorFixedSize.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorUInt128.h:
-
-/usr/include/c++/11/typeinfo:
-
-/usr/include/opencv4/opencv2/flann/miniflann.hpp:
-
-/usr/include/glog/vlog_is_on.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorIO.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorInflation.h:
-
-/usr/include/boost/type_traits/remove_cv.hpp:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorInitializer.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorIntDiv.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorMap.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorPadding.h:
-
-/usr/include/assert.h:
-
-/usr/include/opencv4/opencv2/flann/composite_index.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorRandom.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorReductionGpu.h:
-
-/usr/include/opencv4/opencv2/core/cvdef.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorRef.h:
-
-/usr/include/eigen3/Eigen/src/Core/MathFunctionsImpl.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorScan.h:
-
-/usr/include/x86_64-linux-gnu/sys/syscall.h:
-
-/usr/include/eigen3/Eigen/src/Core/Dot.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorShuffling.h:
-
-/usr/include/boost/core/enable_if.hpp:
-
-/usr/include/opencv4/opencv2/opencv.hpp:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorStorage.h:
-
-/usr/include/boost/type_traits/is_arithmetic.hpp:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorTraits.h:
-
-/usr/include/opencv4/opencv2/core/operations.hpp:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/util/CXX11Meta.h:
-
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/util/EmulateArray.h:
-
-/usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/BesselFunctionsPacketMath.h:
-
-/usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsFunctors.h:
 
 /usr/include/epoxy/common.h:
 
@@ -3391,6 +3057,8 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/glog/log_severity.h:
 
+/usr/include/glog/vlog_is_on.h:
+
 /usr/include/libintl.h:
 
 /usr/include/linux/close_range.h:
@@ -3407,8 +3075,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/locale.h:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorMacros.h:
-
 /usr/include/opencv4/opencv2/core/bufferpool.hpp:
 
 /usr/include/c++/11/bits/vector.tcc:
@@ -3424,6 +3090,10 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/opencv4/opencv2/core/cuda.hpp:
 
 /usr/include/opencv4/opencv2/core/cv_cpu_dispatch.h:
+
+/usr/include/opencv4/opencv2/core/cvdef.h:
+
+/usr/include/string.h:
 
 /usr/include/opencv4/opencv2/core/cvstd.inl.hpp:
 
@@ -3445,8 +3115,6 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/opencv4/opencv2/dnn.hpp:
 
-/usr/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorForcedEval.h:
-
 /usr/include/opencv4/opencv2/core/persistence.hpp:
 
 /usr/include/opencv4/opencv2/dnn/dict.hpp:
@@ -3463,15 +3131,27 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/opencv4/opencv2/dnn/utils/inference_engine.hpp:
 
+/usr/local/include/g2o/core/base_edge.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/struct_statx_timestamp.h:
+
+/usr/include/opencv4/opencv2/stitching/detail/motion_estimators.hpp:
+
 /usr/local/include/pangolin/image/copy.h:
 
 /usr/include/opencv4/opencv2/stitching/detail/exposure_compensate.hpp:
 
 /usr/include/opencv4/opencv2/flann/autotuned_index.h:
 
+/usr/include/assert.h:
+
+/usr/include/opencv4/opencv2/flann/composite_index.h:
+
 /usr/include/c++/11/bits/allocated_ptr.h:
 
 /usr/include/opencv4/opencv2/flann/defines.h:
+
+/usr/include/x86_64-linux-gnu/asm/unistd_64.h:
 
 /usr/include/opencv4/opencv2/flann/dist.h:
 
@@ -3481,13 +3161,17 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/opencv4/opencv2/flann/linear_index.h:
 
+/usr/include/spdlog/sinks/sink.h:
+
 /usr/include/opencv4/opencv2/flann/logger.h:
 
 /usr/include/boost/type_traits/is_default_constructible.hpp:
 
-/usr/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsHalf.h:
-
 /usr/include/opencv4/opencv2/flann/matrix.h:
+
+/usr/include/c++/11/typeinfo:
+
+/usr/include/opencv4/opencv2/flann/miniflann.hpp:
 
 /usr/include/boost/type_traits/type_identity.hpp:
 
@@ -3505,6 +3189,10 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 
 /usr/include/opencv4/opencv2/objdetect.hpp:
 
+/usr/include/boost/core/enable_if.hpp:
+
+/usr/include/opencv4/opencv2/opencv.hpp:
+
 /usr/lib/gcc/x86_64-linux-gnu/11/include/stdarg.h:
 
 /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h:
@@ -3512,3 +3200,81 @@ app/CMakeFiles/GenetaSLAM.dir/run.cpp.o: /home/geneta/Project/geneta_slam/app/ru
 /usr/include/opencv4/opencv2/opencv_modules.hpp:
 
 /usr/include/opencv4/opencv2/stitching.hpp:
+
+/usr/include/opencv4/opencv2/stitching/detail/blenders.hpp:
+
+/usr/include/opencv4/opencv2/stitching/detail/matchers.hpp:
+
+/usr/include/eigen3/Eigen/src/misc/RealSvd2x2.h:
+
+/usr/include/eigen3/Eigen/src/Eigenvalues/RealQZ.h:
+
+/usr/include/opencv4/opencv2/stitching/detail/util.hpp:
+
+/usr/include/x86_64-linux-gnu/bits/getopt_core.h:
+
+/usr/include/boost/preprocessor/repetition/enum_params.hpp:
+
+/usr/include/opencv4/opencv2/flann/kmeans_index.h:
+
+/usr/include/opencv4/opencv2/stitching/detail/util_inl.hpp:
+
+/usr/include/boost/utility/base_from_member.hpp:
+
+/usr/include/opencv4/opencv2/stitching/detail/warpers_inl.hpp:
+
+/usr/include/opencv4/opencv2/stitching/warpers.hpp:
+
+/usr/include/opencv4/opencv2/video.hpp:
+
+/usr/include/x86_64-linux-gnu/bits/setjmp.h:
+
+/usr/include/sched.h:
+
+/usr/include/spdlog/common-inl.h:
+
+/usr/include/spdlog/details/log_msg_buffer.h:
+
+/usr/include/boost/core/explicit_operator_bool.hpp:
+
+/usr/include/spdlog/details/null_mutex.h:
+
+/usr/include/eigen3/Eigen/src/misc/Kernel.h:
+
+/usr/include/spdlog/details/periodic_worker-inl.h:
+
+/usr/include/spdlog/details/registry-inl.h:
+
+/usr/include/spdlog/fmt/fmt.h:
+
+/usr/include/spdlog/sinks/ansicolor_sink-inl.h:
+
+/usr/local/include/g2o/types/sba/edge_sba_scale.h:
+
+/usr/include/c++/11/ostream:
+
+/usr/include/boost/preprocessor/repetition/enum_trailing_params.hpp:
+
+/usr/include/spdlog/version.h:
+
+/usr/include/eigen3/Eigen/src/Core/functors/AssignmentFunctors.h:
+
+/usr/include/stdc-predef.h:
+
+/usr/include/boost/preprocessor/iteration/detail/bounds/upper1.hpp:
+
+/usr/include/spdlog/sinks/ansicolor_sink.h:
+
+/usr/include/unistd.h:
+
+/usr/include/wchar.h:
+
+/usr/local/include/g2o/core/base_vertex.hpp:
+
+/usr/include/glog/logging.h:
+
+/usr/include/x86_64-linux-gnu/asm/unistd.h:
+
+/usr/include/x86_64-linux-gnu/bits/cpu-set.h:
+
+/usr/include/x86_64-linux-gnu/bits/environments.h:

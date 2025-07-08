@@ -21,7 +21,9 @@ namespace myslam {
         std::mutex data_mutex_; // 数据锁
 
         int observed_times_ = 0;  // 在不同帧间同一点被观测到的次数
+        int active_observed_times_ = 0; // 活跃观测的次数
         std::list<std::weak_ptr<Feature>> observations_; // 观测值是一个Feature类的列表，相邻关键帧可能存在共视关系
+        std::list<std::weak_ptr<Feature>> active_observations_; // 活跃的观测
 
         MapPoint() {}
 
@@ -40,17 +42,27 @@ namespace myslam {
         };
 
         // 同一点被观测到的计数，已实现，并将匹配的地图点和特征点进行存储
-        void AddObservation(std::shared_ptr<Feature> feature) {
-            observations_.push_back(feature);
-            observed_times_++; 
-        }
+        void AddObservation(std::shared_ptr<Feature> feature);
+
+        // 添加一个激活观测点，已实现
+        void AddActiveObservation(std::shared_ptr<Feature> feature);
 
         // 移除一个观测点，未实现
         void RemoveObservation(std::shared_ptr<Feature> feat); 
 
+        // 移除激活观测点，已实现
+        void RemoveActiveObservation(std::shared_ptr<Feature> feat);
+
         // 获取观测点，已实现
         std::list<std::weak_ptr<Feature>> GetObs() { 
+            std::unique_lock<std::mutex> lck(data_mutex_);
             return observations_;
+        }
+
+        // 获取活跃观测点
+        std::list<std::weak_ptr<Feature>> GetActiveObs() {
+            std::unique_lock<std::mutex> lck(data_mutex_);
+            return active_observations_;
         }
 
         // 创建一个新的地图点，未实现

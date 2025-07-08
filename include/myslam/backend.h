@@ -49,12 +49,6 @@ namespace myslam {
         // 关联回环
         void SetLoopclosing(LoopclosingPtr loop) { loop_ = loop; }
 
-        // 后端地图插入一个新地图点
-        void InsertNewMapPoint(MapPoint::Ptr new_map_point) { new_map_point_ = new_map_point; }
-
-        // 后端地图插入一个新关键帧
-        void InsertNewKeyFrame(Frame::Ptr new_key_frame) { new_key_frame_ = new_key_frame; }
-
     private:
         // 后端线程
         void BackendLoop();

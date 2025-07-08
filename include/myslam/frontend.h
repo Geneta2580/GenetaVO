@@ -58,7 +58,7 @@ namespace myslam {
             FrontendStatus status_ = FrontendStatus::INIT; 
 
             // 进行数据初始化
-            bool Init(); 
+            bool SteroInit(); 
 
             // 进行左目图像GFTT特征点提取，返回提取的特征点数量
             int DetectLeftFeatures(); 
