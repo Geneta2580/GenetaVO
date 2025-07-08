@@ -67,7 +67,7 @@ namespace myslam {
                 continue; 
             }
 
-            Optimize(active_kfs, active_landmarks); // 优化函数
+            // Optimize(active_kfs, active_landmarks); // 优化函数
         }
     }
 

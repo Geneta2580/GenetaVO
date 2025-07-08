@@ -218,6 +218,9 @@ namespace myslam {
                 kps_last.push_back(feat->position_.pt);
                 kps_current.push_back(cv::Point2f(px[0], px[1])); // 该特征点有关联的地图点，使用重投影作为初始估计
             }
+            // else if (feat) { // 如果没有关联地图点，则使用上一帧的特征点位置作为初始估计   
+            //     kps_current.push_back(feat->position_.pt); // 使用上一帧的特征点位置作为初始估计
+            // }
         }
 
         if (kps_last.empty()) {
@@ -285,7 +288,7 @@ namespace myslam {
             }
             auto mp = current_frame_->features_left_[i]->map_point_.lock(); // 若存在三角化后的地图点
             
-            if (mp) {
+            if (mp && !mp->is_outlier_) {
                 features.push_back(current_frame_->features_left_[i]);
                 EdgeProjectionPoseOnly *edge = new EdgeProjectionPoseOnly(mp->pos_, K); // 传入世界坐标以及内参矩阵 
                 edge->setId(index); // 注意这里的index要和顶点id错开
@@ -349,6 +352,7 @@ namespace myslam {
             if (feat->is_outlier_) {
                 MapPoint::Ptr mp = feat->map_point_.lock();
                 if (mp && current_frame_->id_ - reference_frame_->id_ <= 2) {
+                    mp->is_outlier_ = true;
                     map_->AddOutlierMapPoint(mp->id_);
                 }
                 feat->map_point_.reset(); // 断开与地图点的关联
@@ -464,7 +468,7 @@ namespace myslam {
             status_ = FrontendStatus::TRACKING_BAD;
         } else {
             status_ = FrontendStatus::LOST;
-            // std::cout << "Tracking lost, try to relocalize or reinitialize." << std::endl;
+            std::cout << "Tracking lost, try to relocalize or reinitialize." << std::endl;
         }
 
         if (status_ == FrontendStatus::TRACKING_BAD) {
@@ -485,7 +489,7 @@ namespace myslam {
         }
 
         if (status_ != FrontendStatus::LOST) {
-            relative_motion_ = current_frame_->RelativePose() * last_frame_->RelativePose().inverse();
+            relative_motion_ = current_frame_->Pose() * last_frame_->Pose().inverse();
         }
 
         return num_track_good_;
