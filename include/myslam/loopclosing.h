@@ -29,11 +29,10 @@ namespace myslam{
             // 构造函数中启动回环线程并挂起
             Loopclosing();
 
-            // 触发地图更新，启动回环检测
-            void Wake();
-
             // 关闭回环线程
             void Stop();
+
+            void InsertNewKeyFrame(Frame::Ptr kf);
 
             // 设置地图，用于传递map参数
             void SetMap(std::shared_ptr<Map> map) { map_ = map; }
@@ -71,7 +70,10 @@ namespace myslam{
             DBoW3::QueryResults results; 
 
             // 传入的关键帧
-            Map::KeyframesType active_kfs_;
+            Map::KeyframesType all_kfs_;
+
+            // DBoW3内部ID到我们系统关键帧ID的映射表
+            std::map<DBoW3::EntryId, size_t> dbow_id_to_kf_id_;
 
             // 回环主线线程
             void Loop();
@@ -92,6 +94,15 @@ namespace myslam{
 
             std::atomic<bool> loop_running_;
 
+            // [任务队列，用于接收来自后端的新关键帧
+            std::list<Frame::Ptr> new_keyframes_list_;
+
+            // 建立LoopClosing模块自己的关键帧数据库
+            std::map<unsigned long, Frame::Ptr> key_frame_database_;
+
+            // 当前关键帧
+            Frame::Ptr current_kf_ = nullptr;
+
             // 重复的回环计数
             int probably_cnt_ = 0;
 
@@ -99,10 +110,13 @@ namespace myslam{
             size_t static_id_ = 0;
 
             // 关键帧间隔窗口
-            int window_size_ = 5;
+            int window_size_ = 300;
 
             // 相似分数阈值
-            double min_score_ = 0;
+            double min_score_ = 0.02;
+
+            // 最小开始检测的数据库大小
+            size_t min_db_size_ = 50; // 新增，避免在数据库过小的情况下进行回环检测
 
             BackendPtr backend_; // 新增后端实例引用
 

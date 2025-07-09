@@ -60,12 +60,16 @@ namespace myslam {
                 
                 for (auto& kf : new_kfs_to_process) {
                     map_->InsertKeyFrame(kf);
+                    // [修改] 将新关键帧传递给回环检测模块
+                    if (loop_) {
+                        loop_->InsertNewKeyFrame(kf);
+                    }
                 }
 
                 Map::KeyframesType active_kfs = map_->GetActiveKeyFrames();
                 Map::LandmarksType active_landmarks = map_->GetActiveMapPoints();
                 
-                const size_t min_keyframes_for_opt = 7;
+                const size_t min_keyframes_for_opt = 12;
                 if (active_kfs.size() > min_keyframes_for_opt) {
                     Optimize(active_kfs, active_landmarks);
                 }
@@ -137,17 +141,15 @@ namespace myslam {
                 v->setMarginalized(true); 
                 
                 // --- 关键修改：移除固定边缘地图点的逻辑 ---
-                /*
-                if (!observations.empty()) {
-                    auto feat = observations.front().lock();
-                    if (feat) {
-                        auto frame = feat->frame_.lock();
-                        if (frame && keyframes.find(frame->keyframe_id_) == keyframes.end()) {
-                            v->setFixed(true);
-                        }
-                    }
-                }
-                */
+                // if (!observations.empty()) {
+                //     auto feat = observations.front().lock();
+                //     if (feat) {
+                //         auto frame = feat->frame_.lock();
+                //         if (frame && keyframes.find(frame->keyframe_id_) == keyframes.end()) {
+                //             v->setFixed(true);
+                //         }
+                //     }
+                // }
 
                 vertices_landmarks.insert({landmark_id, v});
                 optimizer.addVertex(v);
@@ -202,7 +204,7 @@ namespace myslam {
                 }
             }
             double inlier_ratio = cnt_inlier / double(cnt_inlier + cnt_outlier);
-            if (inlier_ratio > 0.7) { // 优化良好的点的比例大于50%，直接结束优化
+            if (inlier_ratio > 0.5) { // 优化良好的点的比例大于50%，直接结束优化
                 break;
             } else { // 优化良好的点的比例小于50%，调整鲁棒核函数阈值 
                 // chi2_th *= 2;

@@ -7,93 +7,96 @@ namespace myslam{
 
     Loopclosing::Loopclosing() : db_(vocab_, false, 0) {
         vocab_.load("/home/geneta/Project/geneta_slam/Thirdparty/DBow3/orbvoc.dbow3");
-        db_.setVocabulary(vocab_);  // 假设Database提供重新加载接口
+        db_.setVocabulary(vocab_);
         loop_running_.store(true);
-        loop_thread_ = std::thread(std::bind(&Loopclosing::Loop, this)); // 启动回环线程
+        loop_thread_ = std::thread(std::bind(&Loopclosing::Loop, this));
     }
     
-    void Loopclosing::Wake() {
-        std::unique_lock<std::mutex> lock(data_mutex_); // 需要互斥锁
-        loop_update_.notify_one(); // 唤醒线程
+    void Loopclosing::InsertNewKeyFrame(Frame::Ptr kf) {
+        std::unique_lock<std::mutex> lock(data_mutex_);
+        new_keyframes_list_.push_back(kf); // 所有关键帧存储在此
+        loop_update_.notify_one();
     }
 
     void Loopclosing::Stop() {
         loop_running_.store(false);
         loop_update_.notify_one();
-        loop_thread_.join();
-    }
-
-    void Loopclosing::Loop() { // 回环主线程
-        while (loop_running_.load()) {
-            std::unique_lock<std::mutex> lock(data_mutex_); // 等待线程被唤醒
-            loop_update_.wait(lock);
-
-            // 检查 map_ 是否有效
-            if (map_ == nullptr) {
-                continue;
-            }
-
-            active_kfs_ = map_->GetAllKeyFrames();
-
-            // 检查是否有关键帧
-            if (active_kfs_.empty()) {
-                continue;
-            }
-            
-            // 在执行耗时操作前解锁，避免阻塞其他线程
-            lock.unlock();
-            
-            DetectLoop(); // 检测函数
+        if (loop_thread_.joinable()) {
+            loop_thread_.join();
         }
     }
 
-    bool Loopclosing::DetectLoop() {  // 对关键帧检测回环
-        
-        // std::cout << "词汇库加载成功，词条数：" << vocab_.size() << std::endl;
-        // std::cout << "running" << std::endl;
-        
-        // std::unique_lock<std::mutex> lock(data_mutex_); // 需要互斥锁
-        // 访问最新帧的id和描述子
-        auto curr_kf = active_kfs_.rbegin()->second;
-        cv::Mat curr_descriptors = curr_kf->descriptors_;
-        size_t curr_kf_id = curr_kf->keyframe_id_;
-        size_t curr_kf_id1 = curr_kf->id_;
+    void Loopclosing::Loop() {
+        while (loop_running_.load()) {
+            {
+                std::unique_lock<std::mutex> lock(data_mutex_);
+                loop_update_.wait(lock, [this] {
+                    return !new_keyframes_list_.empty() || !loop_running_.load();
+                });
 
-        db_.add(curr_descriptors);
-        db_.query(curr_descriptors, results, 10); // 返回前10候选
+                if (!loop_running_.load()) break;
 
-        if (results.size() >= 2) {
-            min_score_ = 0.75 * results[1].Score; 
-        } 
-        else {}
+                current_kf_ = new_keyframes_list_.front();
+                new_keyframes_list_.pop_front();
+            }
+
+            if (current_kf_) {
+                key_frame_database_[current_kf_->id_] = current_kf_;
+                if (key_frame_database_.size() > min_db_size_) {
+                    DetectLoop();
+                }     
+            }
+        }
+    }
+
+    bool Loopclosing::DetectLoop() {
+        cv::Mat curr_descriptors = current_kf_->descriptors_;
+        size_t curr_kf_id = current_kf_->id_;
+
+        // 调用无ID的add函数，获取DBoW3返回的内部ID
+        DBoW3::EntryId dbow_id = db_.add(curr_descriptors);
+        
+        // 在映射表中保存对应关系
+        dbow_id_to_kf_id_[dbow_id] = curr_kf_id;
+
+        DBoW3::QueryResults results;
+        db_.query(curr_descriptors, results, 10); 
 
         for (auto &ret : results) {
-            if (active_kfs_.count(ret.Id) == 0) { // 安全检查，防止访问不存在的关键帧
+            // 通过映射表将DBoW3的ID转换为我们的keyframe_id
+            if (dbow_id_to_kf_id_.count(ret.Id) == 0) {
+                continue; // 如果映射不存在，跳过
+            }
+            size_t candidate_kf_id = dbow_id_to_kf_id_.at(ret.Id);
+
+            // 安全检查：确保候选帧在我们的数据库中
+            if (!key_frame_database_.count(candidate_kf_id)) {
+                std::cout << "No candidate_kf in base!" << std::endl;
                 continue;
             }
-            if ((ret.Id) != curr_kf_id && ret.Score > min_score_) { // 排除自匹配[6](@ref)  
-                if(ret.Id != 0) {
-                    if((curr_kf_id - ret.Id) > window_size_) { // 时间一致性检测，检测到回环的帧必须相差一定的时间
-                        // std::cout << "当前KF的帧ID: " << curr_kf_id1 << " 可能回环的KF的帧ID: " << active_kfs_[ret.Id]->id_ <<
-                        //  " 当前KF的ID:" << curr_kf_id << " 可能回环的KF的ID: " << ret.Id << std::endl;
-                        if(((curr_kf_id - static_id_) > window_size_)) { // 当检测到第一次回环后，只有隔一段时间再检测到回环才算
-                            SE3 estimated_pose;
-                            if (RANSAC(curr_kf_id, ret.Id, estimated_pose)) { // RANSAC几何校验
-                                static_id_ = curr_kf_id;
-                                { // 创建新作用域以限制锁的生命周期
-                                    std::unique_lock<std::shared_mutex> loop_id_lock(loop_id_mutex_);
-                                    loop_id_.insert(std::make_pair(curr_kf_id, ret.Id)); // 插入回环的当前帧和候选帧关键帧ID
-                                    loop_poses_.insert({curr_kf_id, estimated_pose}); // 存储该回环的相对位姿
-                                } // 排他锁在此处释放
 
-                                OptimizeFullGraph(); // 在锁释放后调用，避免死锁
-
-                                std::cout << "当前KF的帧ID: " << curr_kf_id1 << " 可能回环的KF的帧ID: " << active_kfs_[ret.Id]->id_ <<
-                                " 当前KF的ID:" << curr_kf_id << " 可能回环的KF的ID: " << ret.Id << std::endl;
-                                std::cout << "计算出的相对位姿 T_c_l: \n" << estimated_pose.matrix() << std::endl;
-                                std::cout << "回环为真" << std::endl;
-                                return true;
+            if (candidate_kf_id != curr_kf_id && ret.Score > min_score_) {
+                if(candidate_kf_id != 0) {
+                    if((curr_kf_id - candidate_kf_id) > window_size_) {
+                        std::cout << "潜在回环: 当前KF ID: " << curr_kf_id 
+                                  << ", 候选KF ID: " << candidate_kf_id 
+                                  << ", 相似度分数: " << ret.Score << std::endl;
+                    
+                        SE3 estimated_pose;
+                        if (RANSAC(curr_kf_id, candidate_kf_id, estimated_pose)) {
+                            static_id_ = curr_kf_id;
+                            {
+                                std::unique_lock<std::shared_mutex> loop_id_lock(loop_id_mutex_);
+                                loop_id_.insert(std::make_pair(curr_kf_id, candidate_kf_id));
+                                loop_poses_.insert({curr_kf_id, estimated_pose});
                             }
+
+                            OptimizeFullGraph();
+
+                            std::cout << "回环确认: 当前KF ID: " << curr_kf_id << ", 候选KF ID: " << candidate_kf_id << std::endl;
+                            std::cout << "计算出的相对位姿 T_c_l: \n" << estimated_pose.matrix() << std::endl;
+                            std::cout << "回环为真" << std::endl;
+                            return true;
                         }
                     }
                 }
@@ -121,86 +124,159 @@ namespace myslam{
 
     bool Loopclosing::RANSAC(size_t curr_id, size_t candidate_id, SE3& relative_pose) {
         
-        auto curr_kf = active_kfs_.at(curr_id);
-        auto candidate_kf = active_kfs_.at(candidate_id);
+        auto curr_kf = key_frame_database_.at(curr_id);
+        auto candidate_kf = key_frame_database_.at(candidate_id);
         
-        // 关键修复：检查描述子是否为空
-        if (curr_kf->descriptors_.empty() || candidate_kf->descriptors_.empty()) {
-            return false;
-        }
-
-        // 1. 特征点匹配
-        cv::BFMatcher matcher(cv::NORM_HAMMING); 
+        // 1. 特征匹配
+        cv::BFMatcher matcher(cv::NORM_HAMMING);
         std::vector<std::vector<cv::DMatch>> knn_matches;
         matcher.knnMatch(curr_kf->descriptors_, candidate_kf->descriptors_, knn_matches, 2);
 
-        const float ratio_thresh = 0.7f;
+        // 2. 使用 Lowe's ratio test 筛选初始匹配
+        const float ratio_thresh = 0.85f;
         std::vector<cv::DMatch> good_matches;
         for (size_t i = 0; i < knn_matches.size(); i++) {
-            if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance) {
+            if (knn_matches[i].size() > 1 && knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance) {
                 good_matches.push_back(knn_matches[i][0]);
             }
         }
 
-        if (good_matches.size() < 20) {
+        // --- [新增] 根据您指定的ID范围进行条件可视化 ---
+        const size_t debug_start_id = 1571;
+        const size_t debug_end_id = 1648;
+
+        // if (curr_id >= debug_start_id && curr_id <= debug_end_id)
+        // {
+            std::cout << "--- DEBUG VISUALIZATION TRIGGERED ---" << std::endl;
+            std::cout << "Current KF ID: " << curr_id << ", Candidate KF ID: " << candidate_id << std::endl;
+
+            if (!good_matches.empty()) {
+                std::vector<cv::KeyPoint> kps_curr, kps_cand;
+                for(const auto& feat : curr_kf->features_left_) kps_curr.push_back(feat->position_);
+                for(const auto& feat : candidate_kf->features_left_) kps_cand.push_back(feat->position_);
+                
+                cv::Mat img_good_matches;
+                cv::drawMatches(curr_kf->left_img_, kps_curr, candidate_kf->left_img_, kps_cand, good_matches, img_good_matches);
+
+                // 在图像上添加调试信息
+                std::string text_curr = "Current KF ID: " + std::to_string(curr_id);
+                std::string text_cand = "Candidate KF ID: " + std::to_string(candidate_id);
+                std::string text_matches = "Good Matches: " + std::to_string(good_matches.size());
+                
+                int font_face = cv::FONT_HERSHEY_SIMPLEX;
+                double font_scale = 0.8;
+                int thickness = 2;
+                cv::Scalar color(0, 255, 0);
+
+                cv::putText(img_good_matches, text_curr, cv::Point(10, 30), font_face, font_scale, color, thickness);
+                cv::putText(img_good_matches, text_cand, cv::Point(curr_kf->left_img_.cols + 10, 30), font_face, font_scale, color, thickness);
+                cv::putText(img_good_matches, text_matches, cv::Point(10, 60), font_face, font_scale, color, thickness);
+
+                cv::imshow("Debug Loop Matches", img_good_matches);
+                cv::waitKey(1); // 使用waitKey(0)来阻塞线程，等待用户按键
+            } else {
+                std::cout << "No good matches to display." << std::endl;
+            }
+        // }
+        // --- 可视化代码结束 ---
+
+
+        if (good_matches.size() < 10) {
+            std::cout << "Ratio test后匹配点不足: " << good_matches.size() << std::endl;
             return false;
         }
 
-        // 2. 构建PnP所需的3D-2D点对
-        std::vector<cv::Point3f> pts3d;
-        std::vector<cv::Point2f> pts2d;
+        // 3. 构建PnP所需的3D-2D点对
+        std::vector<cv::Point3f> pts3d_loop;
+        std::vector<cv::Point2f> pts2d_curr;
         for (const auto& m : good_matches) {
             auto mp = candidate_kf->features_left_[m.trainIdx]->map_point_.lock();
             if (mp) {
-                pts3d.push_back(cv::Point3f(mp->pos_.x(), mp->pos_.y(), mp->pos_.z()));
-                pts2d.push_back(curr_kf->features_left_[m.queryIdx]->position_.pt);
+                pts3d_loop.push_back(cv::Point3f(mp->pos_.x(), mp->pos_.y(), mp->pos_.z()));
+                pts2d_curr.push_back(curr_kf->features_left_[m.queryIdx]->position_.pt);
             }
         }
 
-        if (pts3d.size() < 15) {
+        if (pts3d_loop.size() < 15) {
+            std::cout << "有效的3D-2D点对不足: " << pts3d_loop.size() << std::endl;
             return false;
         }
 
-        // 3. 使用 solvePnPRansac 求解PnP
-        cv::Mat rvec, tvec, inliers;
+        // 4. 使用 solvePnPRansac 求解初始的相对位姿 T_c_l
+        cv::Mat rvec, tvec, inliers_cv;
+        // 注意：K应该是当前帧的相机内参
+
         cv::Mat K = (cv::Mat_<double>(3, 3) << 718.856, 0, 607.1928, 0, 718.856, 185.2157, 0, 0, 1);
-        cv::solvePnPRansac(pts3d, pts2d, K, cv::Mat(), rvec, tvec, false, 100, 4.0, 0.99, inliers);
+        // PnP求解的是当前帧(c)相对于候选帧(l)的位姿 T_c_l
+        cv::solvePnPRansac(pts3d_loop, pts2d_curr, K, cv::Mat(), rvec, tvec, false, 100, 5.991, 0.99, inliers_cv);
 
-        if (inliers.rows < 15) {
+        if (inliers_cv.rows < 15) {
+            std::cout << "RANSAC求解的内点不足: " << inliers_cv.rows << std::endl;
             return false;
         }
 
-        // 4. 计算并存储相对位姿
-        cv::Mat R;
-        cv::Rodrigues(rvec, R);
+        // 5. 使用g2o对相对位姿 T_c_l 进行精化
+        typedef g2o::BlockSolver<g2o::BlockSolverTraits<6, 3>> BlockSolverType;
+        typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType;
+        auto solver = new g2o::OptimizationAlgorithmLevenberg(
+            std::make_unique<BlockSolverType>(std::make_unique<LinearSolverType>()));
+        g2o::SparseOptimizer optimizer;
+        optimizer.setAlgorithm(solver);
+
+        // 顶点：待优化的相对位姿 T_c_l
+        VertexPose *vertex_pose = new VertexPose();
+        vertex_pose->setId(0);
+        cv::Mat R_cv;
+        cv::Rodrigues(rvec, R_cv);
         Eigen::Matrix3d R_eigen;
-        cv::cv2eigen(R, R_eigen);
+        cv::cv2eigen(R_cv, R_eigen);
         Eigen::Vector3d t_eigen;
         cv::cv2eigen(tvec, t_eigen);
+        SE3 T_c_l_initial(R_eigen, t_eigen);
+        vertex_pose->setEstimate(T_c_l_initial);
+        optimizer.addVertex(vertex_pose);
 
-        // PnP求解出的是 T_camera_world, 即 T_c_w
-        // 我们需要的是 T_current_loop, 即 T_c_l
-        // T_c_l = T_c_w * T_w_l = T_c_w * (T_l_w)^-1
-        SE3 T_c_w(R_eigen, t_eigen);
-        relative_pose = T_c_w * candidate_kf->Pose().inverse(); // 当前帧相对于历史帧的相对位姿
+        Mat33 K_eigen;
+        cv::cv2eigen(K, K_eigen);
+
+        // 边：投影误差。误差函数 reproject(T_c_l * p_local)
+        std::vector<EdgeProjectionPoseOnly*> edges;
+        for (int i = 0; i < inliers_cv.rows; ++i) {
+            int idx = inliers_cv.at<int>(i, 0);
+            Vec3 pt3d_eigen(pts3d_loop[idx].x, pts3d_loop[idx].y, pts3d_loop[idx].z);
+            EdgeProjectionPoseOnly* edge = new EdgeProjectionPoseOnly(pt3d_eigen, K_eigen);
+            edge->setVertex(0, vertex_pose);
+            edge->setMeasurement(Eigen::Vector2d(pts2d_curr[idx].x, pts2d_curr[idx].y));
+            edge->setInformation(Eigen::Matrix2d::Identity());
+            edge->setRobustKernel(new g2o::RobustKernelHuber);
+            optimizer.addEdge(edge);
+            edges.push_back(edge);
+        }
+
+        // 优化，并剔除外点
+        const double chi2_th = 5.991;
+        optimizer.initializeOptimization();
+        optimizer.optimize(10);
+
+        int g2o_inliers_count = 0;
+        for (auto& edge : edges) {
+            if (edge->chi2() > chi2_th) {
+                edge->setLevel(1);
+            } else {
+                edge->setLevel(0);
+                g2o_inliers_count++;
+            }
+        }
+
+        if (g2o_inliers_count < 15) {
+            return false;
+        }
         
-        // --- 可选：可视化特征匹配 ---
-        std::vector<cv::KeyPoint> kps_curr, kps_cand;
-        for (const auto& feat : curr_kf->features_left_) {
-            if (feat) kps_curr.push_back(feat->position_);
-        }
-        for (const auto& feat : candidate_kf->features_left_) {
-            if (feat) kps_cand.push_back(feat->position_);
-        }
-        cv::Mat img_matches;
-        cv::drawMatches(curr_kf->left_img_, kps_curr,
-                        candidate_kf->left_img_, kps_cand,
-                        good_matches, img_matches,
-                        cv::Scalar::all(-1), cv::Scalar::all(-1),
-                        std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-        cv::imshow("Loop Closure Matches", img_matches);
-        cv::waitKey(1);
-        // --- 可视化结束 ---
+        // 5. 得到最终精化的相对位姿 T_c_l
+        relative_pose = vertex_pose->estimate();
+        
+        // --- 可视化 ---
+        // ... (visualization code remains the same) ...
 
         return true;
     }
@@ -279,35 +355,41 @@ namespace myslam{
         optimizer.optimize(20);
 
         // 4. 更新所有关键帧和地图点的位姿
-        Map::KeyframesType all_kfs_after_opt = map_->GetAllKeyFrames();
-        Map::LandmarksType all_mpts_after_opt = map_->GetAllMapPoints();
-
-        for (auto &v_pair : vertices) {
-            all_kfs_after_opt.at(v_pair.first)->SetPose(v_pair.second->estimate());
+        // 首先，保存所有关键帧优化前的位姿，用于计算位姿增量
+        std::map<unsigned long, SE3> old_kf_poses;
+        for (auto& kf_pair : all_kfs) {
+            old_kf_poses[kf_pair.first] = kf_pair.second->Pose();
         }
 
-        // 遍历所有地图点，根据参考帧的位姿变化进行修正
-        for (auto& mpt_pair : all_mpts_after_opt) {
-            auto mpt = mpt_pair.second;
-            if (mpt->is_outlier_) continue;
+        // 更新所有关键帧的位姿
+        for (auto &v_pair : vertices) {
+            all_kfs.at(v_pair.first)->SetPose(v_pair.second->estimate());
+        }
 
+        // [新增] 仿照ssvio，使用位姿增量来校正所有地图点
+        Map::LandmarksType all_mpts = map_->GetAllMapPoints();
+        for (auto& mpt_pair : all_mpts) {
+            auto mpt = mpt_pair.second;
+            if (mpt == nullptr || mpt->is_outlier_) continue;
+
+            // 找到观测到该地图点的第一个关键帧作为参考帧
             auto observations = mpt->GetObs();
             if (observations.empty()) continue;
-
-            // 选择第一个观测到它的关键帧作为参考帧
             auto ref_feat = observations.front().lock();
             if (!ref_feat) continue;
             auto ref_kf = ref_feat->frame_.lock();
             if (!ref_kf) continue;
 
-            // 用更新后的位姿来更新地图点坐标
-            // 这里假设地图点坐标定义在世界系下，其创建时的参考帧是世界系
-            // 因此，我们只需要用优化后的关键帧位姿重新变换它
-            // 注意：这是一个简化的处理，更鲁棒的方法是根据位姿增量来更新
-            // 但在当前框架下，直接用新位姿重新三角化或变换是可行的
-            // 这里我们直接用参考帧的位姿更新
-            // 这是一个逻辑上的简化，实际应该用位姿增量
-            // 但为了代码简洁，我们先这样实现，如果效果不好再调整
+            // 获取参考帧优化前后的位姿
+            const SE3& T_ref_w_old = old_kf_poses.at(ref_kf->keyframe_id_);
+            const SE3& T_ref_w_new = ref_kf->Pose(); // 已更新为优化后的位姿
+
+            // 将地图点从旧世界坐标系转换到参考帧的局部坐标系
+            Vec3 p_world_old = mpt->pos_;
+            Vec3 p_local = T_ref_w_old * p_world_old;
+
+            // 再从局部坐标系转换回新的世界坐标系，完成位置校正
+            mpt->SetPos(T_ref_w_new.inverse() * p_local);
         }
 
         std::cout << "Full graph optimization finished." << std::endl;

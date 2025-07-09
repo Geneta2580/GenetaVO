@@ -317,6 +317,15 @@ namespace myslam {
             return 0;
         }
 
+        // // 添加顶点和重投影误差边
+        // if (last_frame_) {
+        //     VertexPose* last_vertex_pose = new VertexPose();
+        //     last_vertex_pose->setId(1); // 新的顶点
+        //     last_vertex_pose->setEstimate(last_frame_->Pose());
+        //     last_vertex_pose->setFixed(true); // 固定上一帧的位姿
+        //     optimizer.addVertex(last_vertex_pose);
+        // }
+
         // 开始进行位姿的BA优化
         const double chi2_th = 5.991;
         int cnt_outlier = 0;
@@ -496,9 +505,9 @@ namespace myslam {
             ReTrack();
         } else { // TRACKING_GOOD
             // 追踪良好，根据运动量判断是否插入关键帧
-            // if (relative_motion_.log().norm() > 0.1) { // 阈值可调
-            //     InsertKeyFrame();
-            // }
+            if (relative_motion_.log().norm() > 0.05) { // 阈值可调
+                InsertKeyFrame();
+            }
         }
 
         return num_track_good_;
@@ -520,6 +529,7 @@ namespace myslam {
     }
 
     void Frontend::InsertKeyFrame() {
+        
         current_frame_->SetKeyFrame();
         
         // 关键：计算并设置新关键帧的绝对位姿
@@ -530,11 +540,6 @@ namespace myslam {
         // --- 而是将其放入后端的处理队列中 ---
         backend_->InsertNewKeyFrame(current_frame_);
 
-        // --- 后端由主动轮询替代被动唤醒 ---
-        // backend_->Wake(); 
-        if (loop_) {
-            loop_->Wake();
-        }
         if (viewer_) {
             viewer_->UpdateMap();
         }
