@@ -56,9 +56,6 @@ namespace myslam {
                 break;
             }
 
-            // 获取地图大锁，准备执行优化
-            std::unique_lock<std::mutex> map_lock(map_->map_update_mutex_);
-
             Map::KeyframesType active_kfs = map_->GetActiveKeyFrames();
             Map::LandmarksType active_landmarks = map_->GetActiveMapPoints();
             
@@ -67,7 +64,7 @@ namespace myslam {
                 continue; 
             }
 
-            // Optimize(active_kfs, active_landmarks); // 优化函数
+            Optimize(active_kfs, active_landmarks); // 优化函数
         }
     }
 
@@ -206,6 +203,7 @@ namespace myslam {
                     if (mappoint->GetObs().empty()) { 
                         mappoint->is_outlier_ = true;
                         map_->AddOutlierMapPoint(mappoint->id_);
+                        // std::cout << "running" << std::endl;
                     }
                 }
                 ef.second->map_point_.reset(); // 断开与地图点的关联
@@ -214,16 +212,19 @@ namespace myslam {
             }
         }
     
-        for (auto &v : vertices) {
-            keyframes.at(v.first)->SetPose(v.second->estimate());
-        }
-        for (auto &v : vertices_landmarks) {
-            landmarks.at(v.first)->SetPos(v.second->estimate());
-        }
+        {   // 获取地图大锁，增删重要部分
+            std::unique_lock<std::mutex> map_lock(map_->map_update_mutex_);
+            for (auto &v : vertices) {
+                keyframes.at(v.first)->SetPose(v.second->estimate());
+            }
+            for (auto &v : vertices_landmarks) {
+                landmarks.at(v.first)->SetPos(v.second->estimate());
+            }
 
-        // delete outlier mappoints
-        map_->RemoveAllOutlierMapPoints();
-        map_->RemoveOldActiveMapPoints();
+            // delete outlier mappoints
+            map_->RemoveAllOutlierMapPoints();
+            map_->RemoveOldActiveMapPoints();
+        }
     }
     
 }

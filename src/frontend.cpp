@@ -11,19 +11,20 @@ namespace myslam {
     bool Frontend::Calculate(myslam::Frame::Ptr frame) {
         current_frame_ = frame;
 
-        std::unique_lock<std::mutex> lock(map_->map_update_mutex_);
-
-        switch (status_) {
-            case FrontendStatus::INIT:
-                SteroInit(); // 进行数据初始化
-                break;
-            case FrontendStatus::TRACKING_GOOD:
-            case FrontendStatus::TRACKING_BAD:
-                Track(); // 进行光流追踪、位姿估计（必要时刻插入关键帧）
-                break;
-            case FrontendStatus::LOST:
-                ReTrack();
-                break;
+        {   // 作用域，map_update_mutex_大锁，用完即释放
+            std::unique_lock<std::mutex> lock(map_->map_update_mutex_);
+            switch (status_) {
+                case FrontendStatus::INIT:
+                    SteroInit(); // 进行数据初始化
+                    break;
+                case FrontendStatus::TRACKING_GOOD:
+                case FrontendStatus::TRACKING_BAD:
+                    Track(); // 进行光流追踪、位姿估计（必要时刻插入关键帧）
+                    break;
+                case FrontendStatus::LOST:
+                    ReTrack();
+                    break;
+            }
         }
 
         if (viewer_) {
@@ -471,6 +472,12 @@ namespace myslam {
             std::cout << "Tracking lost, try to relocalize or reinitialize." << std::endl;
         }
 
+        // 注意，在BAD之前更新
+        if (status_ != FrontendStatus::LOST) {
+            relative_motion_ = current_frame_->RelativePose() * last_frame_->RelativePose().inverse();
+        }
+        // 注意，在BAD之前更新
+
         if (status_ == FrontendStatus::TRACKING_BAD) {
             // “补充”策略：不清除现有特征点，而是检测新的来补充
             DetectLeftFeatures();
@@ -486,10 +493,6 @@ namespace myslam {
             // if (relative_motion_.log().norm() > 0.1) { // 阈值可调
             //     InsertKeyFrame();
             // }
-        }
-
-        if (status_ != FrontendStatus::LOST) {
-            relative_motion_ = current_frame_->Pose() * last_frame_->Pose().inverse();
         }
 
         return num_track_good_;
