@@ -99,7 +99,7 @@ namespace myslam{
             size_t static_id_ = 0;
 
             // 关键帧间隔窗口
-            int window_size_ = 40;
+            int window_size_ = 5;
 
             // 相似分数阈值
             double min_score_ = 0;

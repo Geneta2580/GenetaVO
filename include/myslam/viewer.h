@@ -20,6 +20,8 @@ namespace myslam {
 
         Viewer();
 
+        void Start();
+
         void SetMap(Map::Ptr map) { map_ = map; }
 
         void Close();
@@ -74,7 +76,7 @@ namespace myslam {
         std::map<unsigned long, MapPoint::Ptr> all_landmarks_;
         bool map_updated_ = false;
 
-        std::mutex viewer_data_mutex_;
+        // std::mutex viewer_data_mutex_; // 移除 Viewer 自己的锁
         std::mutex frame_mutex_;  // 仅保护 current_frame_
 
         // 新帧的位姿数据

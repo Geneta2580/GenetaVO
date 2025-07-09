@@ -8,29 +8,37 @@
 namespace myslam {
 
     Viewer::Viewer() {
-        viewer_thread_ = std::thread(std::bind(&Viewer::ThreadLoop, this)); // 创建线程
+        viewer_running_ = true;
+        // 线程的启动被移到 Start() 函数
+    }
+
+    void Viewer::Start() {
+        viewer_thread_ = std::thread(std::bind(&Viewer::ThreadLoop, this));
     }
 
     void Viewer::Close() { // 关闭线程
         viewer_running_ = false;
-        viewer_thread_.join();
+        if (viewer_thread_.joinable()) {
+            viewer_thread_.join();
+        }
     }
 
-    void Viewer::AddCurrentFrame(Frame::Ptr current_frame) {   // 初始帧为空指针，只有在外部传入值后current_frame才有值
-        std::lock_guard<std::mutex> lck(frame_mutex_);  // 仅短暂锁定帧更新
+    void Viewer::AddCurrentFrame(Frame::Ptr current_frame) {
+        std::lock_guard<std::mutex> lck(frame_mutex_);
         current_frame_ = current_frame;
     }
 
     void Viewer::UpdateMap() {
-        std::unique_lock<std::mutex> lck(viewer_data_mutex_);
+        // 这个函数现在假定调用者（Frontend）已经持有了地图的大锁
+        // std::cout << "Updating map in viewer..." << std::endl;
         assert(map_ != nullptr);
+        std::unique_lock<std::mutex> lck(map_->map_update_mutex_);
         all_frames_ = map_->GetAllKeyFrames();
         all_landmarks_ = map_->GetAllMapPoints();
         map_updated_ = true;
     }
 
-    void Viewer::ThreadLoop() {  // 画图viewer可视化界面主线程，读程序从这里开始读
-        
+    void Viewer::ThreadLoop() {
         pangolin::CreateWindowAndBind("GenetaSLAM", 1024, 768);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
@@ -40,7 +48,6 @@ namespace myslam {
             pangolin::ProjectionMatrix(1024, 768, 400, 400, 512, 384, 0.1, 1000),
             pangolin::ModelViewLookAt(0, -5, -10, 0, 0, 0, 0.0, -1.0, 0.0));
 
-        // Add named OpenGL viewport to window and provide 3D Handler
         pangolin::View& vis_display =
             pangolin::CreateDisplay()
                 .SetBounds(0.0, 1.0, 0.0, 1.0, -1024.0f / 768.0f)
@@ -48,7 +55,7 @@ namespace myslam {
 
         const float green[3] = {0, 1, 0};
 
-        while (!pangolin::ShouldQuit() && viewer_running_) { // 判定viewer仍在工作                
+        while (!pangolin::ShouldQuit() && viewer_running_) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
             vis_display.Activate(vis_camera);
@@ -56,43 +63,33 @@ namespace myslam {
             Frame::Ptr local_frame;
             {
                 std::lock_guard<std::mutex> lck(frame_mutex_);
-                local_frame = current_frame_;  // 快速拷贝
-            }  // 立即释放锁，后续渲染不再持有锁
+                local_frame = current_frame_;
+            }
 
-            // DrawStaticLine(); // 测试用
-            std::unique_lock<std::mutex> lock(viewer_data_mutex_);
-            if (local_frame) { // 若从AddCurrentFrame传入了帧图像
-                Twc = local_frame->Pose().inverse(); // 存储当前帧的位姿
-                trajectory_.push_back(Twc.translation());
-                if(local_frame->is_keyframe_){ // 若当前帧为关键帧，则更新
-                    map_->InsertKeyFrame(new_key_frame_);
-                    map_->InsertMapPoint(new_map_point_); // 此句必须在三角化执行之后，也就是说关键帧必三角化
-                    // assert(map_ != nullptr);
-                    all_frames_ = map_->GetAllKeyFrames();
-                    all_landmarks_ = map_->GetAllMapPoints();
-                    map_updated_ = true;
+            if (local_frame) {
+                DrawFrame(local_frame, green);
+                // FollowCurrentFrame(vis_camera, local_frame);
+                PlotFrameImage(local_frame);
+                cv::waitKey(1);
+            }
+
+            {
+                std::unique_lock<std::mutex> map_lock(map_->map_update_mutex_);
+                if (map_) {
+                    DrawMapPoints();
                 }
-
-                DrawFrame(local_frame, green); // 在pangolin中进行当前帧的绘制（像是一个画当前相机运动的）
-                // FollowCurrentFrame(vis_camera); // 引入了当前帧的位姿变换
-
-                PlotFrameImage(local_frame); // 在opencv中进行当前帧的绘制
                 
-                cv::waitKey(1); // 等待1ms
-            }
-
-            if (map_) { // 地图有效
-                DrawMapPoints(); // 绘制地图点
-            }
-
-            if (!trajectory_.empty()) {
-                DrawTrajectory();
-            }
+                if (local_frame) {
+                    trajectory_.push_back(local_frame->Pose().inverse().translation());
+                }
+                if (!trajectory_.empty()) {
+                    DrawTrajectory();
+                }
+            } // map_lock 在这里自动释放
 
             pangolin::FinishFrame();
             usleep(5000);
         }
-
         std::cout << "Stop viewer" << std::endl;
     }
 
@@ -167,11 +164,12 @@ namespace myslam {
     void Viewer::DrawMapPoints() {
         const float red[3] = {1.0, 0, 0};
         const float blue[3] = {0, 0, 1.0};
-        for (auto& af : all_frames_) {  // 画出所有关键帧
-            DrawFrame(af.second, blue); // 这里all_frames_是一个键对值，std::pair，second表示输出pair的第二个索引
+        
+        for (auto& af : all_frames_) {
+            DrawFrame(af.second, blue);
         }
 
-        // glPointSize(2);  // 不绘制点云
+        // glPointSize(2);
         // glBegin(GL_POINTS);
         // for (auto& landmark : all_landmarks_) {
         //     auto pos = landmark.second->Pos();
@@ -181,30 +179,16 @@ namespace myslam {
         // glEnd();
     }
 
-    // 渲染一条直线，与外部参数无关，测试多线程并行时用
-    void Viewer::DrawStaticLine() {
-        const float red[3] = {1.0, 0, 0}; // 红色直线
-        const float line_width = 3.0f;
-        
-        glLineWidth(line_width);
-        glBegin(GL_LINES);
-        glColor3fv(red);
-        // 世界坐标系下绘制X轴方向直线
-        glVertex3f(0, 0, 0);   // 起点坐标
-        glVertex3f(5, 0, 0);   // 终点坐标
-        glEnd();
-    }
-
     void Viewer::DrawTrajectory() {
         const float green[3] = {0, 1, 0};
         const float line_width = 2.0f;
     
         glLineWidth(line_width);
-        glBegin(GL_LINE_STRIP); // 连续线段模式
+        glBegin(GL_LINE_STRIP);
         glColor3fv(green);
         
         for (const auto& pos : trajectory_) {
-            glVertex3f(pos[0], pos[1], pos[2]); // 按顺序连接轨迹点
+            glVertex3f(pos[0], pos[1], pos[2]);
         }
         
         glEnd();

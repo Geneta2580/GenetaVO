@@ -31,8 +31,11 @@ namespace myslam {
         // 设置地图
         void SetMap(std::shared_ptr<Map> map) { map_ = map; }
 
-        // 触发地图更新，启动优化
-        void Wake();
+        // 启动后端线程
+        void Start();
+
+        // 新增：前端用于插入新关键帧的接口
+        void InsertNewKeyFrame(Frame::Ptr kf);
 
         // 关闭后端线程
         void Stop();
@@ -53,6 +56,9 @@ namespace myslam {
         // 后端线程
         void BackendLoop();
 
+        // 新增：用于处理队列中新关键帧的函数
+        void ProcessNewKeyFrames();
+
         // 全局位姿图优化
         void OptimizeFullGraph();
 
@@ -64,20 +70,17 @@ namespace myslam {
         std::mutex data_mutex_;
         std::mutex pause_mutex_;  // 暂停线程锁
 
-        std::condition_variable map_update_; // 满足条件时唤醒线程
+        // std::condition_variable map_update_; // 移除条件变量
         std::condition_variable resume_cv_; // 用于暂停和恢复
         std::atomic<bool> backend_running_;
         std::atomic<bool> pause_requested_{false};
 
         Camera::Ptr cam_left_ = nullptr, cam_right_ = nullptr;
 
-        LoopclosingPtr loop_; // 新增后端实例引用
+        LoopclosingPtr loop_;
 
-        int old_vertex_id = 0; // 需要边缘化的旧顶点
-
-        // 插入的新帧地图点
-        Frame::Ptr new_key_frame_;
-        MapPoint::Ptr new_map_point_;
+        // 新增：用于前后端通信的线程安全队列
+        std::list<Frame::Ptr> new_keyframes_list_;
     };
 
 }

@@ -11,8 +11,10 @@ namespace myslam {
     bool Frontend::Calculate(myslam::Frame::Ptr frame) {
         current_frame_ = frame;
 
-        {   // 作用域，map_update_mutex_大锁，用完即释放
-            std::unique_lock<std::mutex> lock(map_->map_update_mutex_);
+        // --- 关键修改：移除全局地图锁 ---
+        // --- 前端追踪不再需要持有地图锁，以实现与后端的并行 ---
+        // {
+        //     std::unique_lock<std::mutex> lock(map_->map_update_mutex_);
             switch (status_) {
                 case FrontendStatus::INIT:
                     SteroInit(); // 进行数据初始化
@@ -24,8 +26,9 @@ namespace myslam {
                 case FrontendStatus::LOST:
                     ReTrack();
                     break;
-            }
         }
+        // --- 关键修复：移除这个多余的右花括号 ---
+        // }
 
         if (viewer_) {
             viewer_->AddCurrentFrame(current_frame_); // 加入一个新帧，原本没有帧值的viewer线程从阻塞状态被激活
@@ -66,14 +69,18 @@ namespace myslam {
 
         if (MapInit()) { // 地图初始化并且成功
             status_ = FrontendStatus::TRACKING_GOOD; // 切换前端工作状态码
-            InsertKeyFrame(); // 将第一帧作为关键帧插入
             
+            // 设置所有依赖
             loop_->SetMap(map_); // 将地图传输给回环
             backend_->SetCameras(camera_left_, camera_right_); // 将相机左右的位姿（实际上只要左右相对的位姿即可）赋给空指针
-            
-            // 给viewer和backend提供初始地图信息，进行一次即可
             backend_->SetMap(map_);
             viewer_->SetMap(map_);
+
+            // 在所有依赖都设置好之后，再启动线程
+            backend_->Start();
+            viewer_->Start();
+
+            InsertKeyFrame(); // 将第一帧作为关键帧插入
 
             return true;
         }
@@ -339,8 +346,8 @@ namespace myslam {
             }
         }
     
-        std::cout << "Outlier/Inlier in pose estimating: " << cnt_outlier << "/"
-                  << features.size() - cnt_outlier << std::endl;
+        // std::cout << "Outlier/Inlier in pose estimating: " << cnt_outlier << "/"
+        //           << features.size() - cnt_outlier << std::endl;
 
         // 优化结果输出到当前帧的位姿
         current_frame_->SetPose(vertex_pose->estimate());
@@ -403,8 +410,8 @@ namespace myslam {
 
         }
         
-        std::cout << "Triangulated successful with " << cnt_triangulated_pts
-                  << " map points" << std::endl;
+        // std::cout << "Triangulated successful with " << cnt_triangulated_pts
+        //           << " map points" << std::endl;
 
         return cnt_triangulated_pts;
     }
@@ -484,7 +491,6 @@ namespace myslam {
             FindRightFeatures();
             Triangulation();
             InsertKeyFrame();
-            // ReTrack();
         } else if (status_ == FrontendStatus::LOST) {
             // “重置”策略
             ReTrack();
@@ -521,20 +527,21 @@ namespace myslam {
             current_frame_->SetPose(current_frame_->RelativePose() * reference_frame_->Pose());
         }
         
-        map_->InsertKeyFrame(current_frame_);
-        
-        // 关键：立即更新参考帧，并唤醒其他模块
-        reference_frame_ = current_frame_;
-        // 新的参考帧，其相对位姿是单位矩阵
-        current_frame_->SetRelativePose(SE3());
+        // --- 而是将其放入后端的处理队列中 ---
+        backend_->InsertNewKeyFrame(current_frame_);
 
-        backend_->Wake();
+        // --- 后端由主动轮询替代被动唤醒 ---
+        // backend_->Wake(); 
         if (loop_) {
             loop_->Wake();
         }
         if (viewer_) {
-            viewer_->InsertNewKeyFrame(current_frame_);
+            viewer_->UpdateMap();
         }
+
+        reference_frame_ = current_frame_;
+        // 新的参考帧，其相对位姿是单位矩阵
+        current_frame_->SetRelativePose(SE3());
     }
 
     void Frontend::Stop() {

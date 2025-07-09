@@ -8,67 +8,74 @@
 namespace myslam {
 
     Backend::Backend() {
-        backend_running_.store(true);
-        backend_thread_ = std::thread(std::bind(&Backend::BackendLoop, this)); // 启动后端优化线程
+        backend_running_.store(true); 
     }
     
+    void Backend::Start() {
+        backend_thread_ = std::thread(std::bind(&Backend::BackendLoop, this)); // 启动后端优化线程
+    }
+
     void Backend::RequestPause() {
         pause_requested_.store(true);
-        map_update_.notify_one(); // 立刻让后端暂停，防止被前端更新影响
+        // map_update_.notify_one(); // 移除对已删除的条件变量的调用
     }
 
     void Backend::Resume() {
         pause_requested_.store(false);
         resume_cv_.notify_one();
     }
-
-    void Backend::Wake() {
-        map_update_.notify_one(); // 直接通知，无需加锁
-    }
     
     void Backend::Stop() {
         backend_running_.store(false);
-        map_update_.notify_one();
-        Resume(); // 唤醒可能处于暂停等待的线程
-        backend_thread_.join();
-    }
-
-    void Backend::BackendLoop() { // 后端优化主线程
-        while (backend_running_.load()) {
-            {
-                std::unique_lock<std::mutex> lock(data_mutex_);
-                map_update_.wait(lock);
-            }
-
-            // 在退出循环前，再次检查运行状态
-            if (!backend_running_.load()) {
-                break;
-            }
-
-            // 暂停检查点：如果收到暂停请求，则在此等待
-            {
-                std::unique_lock<std::mutex> pause_lock(pause_mutex_);
-                resume_cv_.wait(pause_lock, [this] { return !pause_requested_.load(); }); // pause_requested_为false则继续执行
-            }
-
-            // 在暂停后再次检查，因为线程可能在Stop()中被唤醒
-            if (!backend_running_.load()) {
-                break;
-            }
-
-            Map::KeyframesType active_kfs = map_->GetActiveKeyFrames();
-            Map::LandmarksType active_landmarks = map_->GetActiveMapPoints();
-            
-            // 优化触发条件：地图中的关键帧数量需要足够多
-            if (active_kfs.size() < 2) {
-                continue; 
-            }
-
-            Optimize(active_kfs, active_landmarks); // 优化函数
+        // map_update_.notify_one(); // 移除对已删除的条件变量的调用
+        if (pause_requested_.load()) {
+            Resume();
+        }
+        if (backend_thread_.joinable()) {
+            backend_thread_.join();
         }
     }
 
-    void Backend::Optimize(Map::KeyframesType &keyframes,   // 优化后的路标点和关键帧位姿返回到变量，实现对输入的操作
+    void Backend::InsertNewKeyFrame(Frame::Ptr kf) {
+        std::unique_lock<std::mutex> lock(data_mutex_);
+        new_keyframes_list_.push_back(kf);
+    }
+
+    void Backend::BackendLoop() {
+        while (backend_running_.load()) {
+            bool should_optimize = false;
+            std::list<Frame::Ptr> new_kfs_to_process;
+            {
+                std::unique_lock<std::mutex> lock(data_mutex_);
+                if (!new_keyframes_list_.empty()) {
+                    // 将新关键帧移动到局部变量，以尽快释放锁
+                    new_kfs_to_process.swap(new_keyframes_list_);
+                    should_optimize = true;
+                    new_keyframes_list_.clear(); // 清空任务队列，表示我们已经收到了信号
+                }
+            }
+
+            if (should_optimize) {
+                std::unique_lock<std::mutex> map_lock(map_->map_update_mutex_);
+                
+                for (auto& kf : new_kfs_to_process) {
+                    map_->InsertKeyFrame(kf);
+                }
+
+                Map::KeyframesType active_kfs = map_->GetActiveKeyFrames();
+                Map::LandmarksType active_landmarks = map_->GetActiveMapPoints();
+                
+                const size_t min_keyframes_for_opt = 7;
+                if (active_kfs.size() > min_keyframes_for_opt) {
+                    Optimize(active_kfs, active_landmarks);
+                }
+            }
+            
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
+    }
+
+    void Backend::Optimize(Map::KeyframesType &keyframes,
                            Map::LandmarksType &landmarks) {
         // setup g2o
         typedef g2o::BlockSolver_6_3 BlockSolverType;
@@ -82,6 +89,7 @@ namespace myslam {
         // pose 顶点，使用Keyframe id
         std::map<unsigned long, VertexPose *> vertices; // 位姿顶点键值对
         unsigned long max_kf_id = 0;
+        unsigned long min_kf_id = 1e9; // 用于找到最老的关键帧
 
         for (auto &keyframe : keyframes) {
             auto kf = keyframe.second;
@@ -92,7 +100,15 @@ namespace myslam {
             if (kf->keyframe_id_ > max_kf_id) {
                 max_kf_id = kf->keyframe_id_;
             }
+            if (kf->keyframe_id_ < min_kf_id) {
+                min_kf_id = kf->keyframe_id_;
+            }
             vertices.insert({kf->keyframe_id_, vertex_pose});
+        }
+
+        // --- 关键修改：固定滑动窗口中最老的一帧 ---
+        if (vertices.count(min_kf_id)) {
+            vertices.at(min_kf_id)->setFixed(true);
         }
 
         // 路标顶点，使用路标id索引
@@ -120,7 +136,8 @@ namespace myslam {
                 v->setId(landmark_id + max_kf_id + 1); 
                 v->setMarginalized(true); 
                 
-                // 关键改动：采用ssvio的锚点策略，并进行严格的空指针检查
+                // --- 关键修改：移除固定边缘地图点的逻辑 ---
+                /*
                 if (!observations.empty()) {
                     auto feat = observations.front().lock();
                     if (feat) {
@@ -130,6 +147,7 @@ namespace myslam {
                         }
                     }
                 }
+                */
 
                 vertices_landmarks.insert({landmark_id, v});
                 optimizer.addVertex(v);
@@ -212,19 +230,17 @@ namespace myslam {
             }
         }
     
-        {   // 获取地图大锁，增删重要部分
-            std::unique_lock<std::mutex> map_lock(map_->map_update_mutex_);
-            for (auto &v : vertices) {
-                keyframes.at(v.first)->SetPose(v.second->estimate());
-            }
-            for (auto &v : vertices_landmarks) {
-                landmarks.at(v.first)->SetPos(v.second->estimate());
-            }
-
-            // delete outlier mappoints
-            map_->RemoveAllOutlierMapPoints();
-            map_->RemoveOldActiveMapPoints();
+        // --- 关键修改：移除这里的锁，因为调用者 BackendLoop 已经加锁了 ---
+        for (auto &v : vertices) {
+            keyframes.at(v.first)->SetPose(v.second->estimate());
         }
+        for (auto &v : vertices_landmarks) {
+            landmarks.at(v.first)->SetPos(v.second->estimate());
+        }
+
+        // delete outlier mappoints
+        map_->RemoveAllOutlierMapPoints();
+        map_->RemoveOldActiveMapPoints();
     }
     
 }
