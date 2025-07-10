@@ -106,14 +106,14 @@ namespace myslam {
 
             // 一些参数
             int num_features_ = 300; // 300 myslam::Config::Get<int>("num_features")
-            int num_features_tracking_good_ = 150;  // 250 myslam::Config::Get<int>("num_features_tracking_good")
-            int num_features_tracking_bad_ = 30;  // 50; myslam::Config::Get<int>("num_features_tracking_bad")
+            int num_features_tracking_good_ = 250;  // 250 myslam::Config::Get<int>("num_features_tracking_good")
+            int num_features_tracking_bad_ = 50;  // 50; myslam::Config::Get<int>("num_features_tracking_bad")
  
             int num_track_good_ = 0;
 
             int num_features_init_ = 100;
 
-            cv::Ptr<cv::ORB> orb_ = cv::ORB::create(num_features_*4, 1.2, 8);
+            cv::Ptr<cv::ORB> orb_ = cv::ORB::create(num_features_, 1.2, 8);
     };
 }
 #endif

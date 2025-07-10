@@ -12,11 +12,11 @@ namespace myslam{
         loop_thread_ = std::thread(std::bind(&Loopclosing::Loop, this));
     }
     
-    void Loopclosing::InsertNewKeyFrame(Frame::Ptr kf) {
-        std::unique_lock<std::mutex> lock(data_mutex_);
-        new_keyframes_list_.push_back(kf); // 所有关键帧存储在此
-        loop_update_.notify_one();
-    }
+    void Loopclosing::InsertNewKeyFrame(Frame::Ptr keyframe) {
+        std::unique_lock<std::mutex> lock(new_keyframes_mutex_);
+        new_keyframes_list_.push_back(keyframe);
+        new_kf_cv_.notify_one();
+    } // 锁在这里自动释放
 
     void Loopclosing::Stop() {
         loop_running_.store(false);
@@ -28,21 +28,66 @@ namespace myslam{
 
     void Loopclosing::Loop() {
         while (loop_running_.load()) {
+            unsigned long kf_id_to_process; // 我们只需要ID
+            
+            // 1. 从队列中获取任务ID
             {
-                std::unique_lock<std::mutex> lock(data_mutex_);
-                loop_update_.wait(lock, [this] {
+                std::unique_lock<std::mutex> lock(new_keyframes_mutex_);
+                new_kf_cv_.wait(lock, [this] {
                     return !new_keyframes_list_.empty() || !loop_running_.load();
                 });
 
                 if (!loop_running_.load()) break;
 
-                current_kf_ = new_keyframes_list_.front();
+                // 只获取ID，然后立即释放队列锁
+                kf_id_to_process = new_keyframes_list_.front()->keyframe_id_;
                 new_keyframes_list_.pop_front();
-            }
 
-            if (current_kf_) {
-                key_frame_database_[current_kf_->id_] = current_kf_;
+            } // 队列锁在这里被快速释放，前端不会被阻塞
+
+            // 2. 【锁-复制-解锁】阶段，只使用Map锁
+            Frame::Ptr kf_copy;
+            Frame::Ptr authoritative_kf_ptr; // 用于后续操作的原始指针
+            {
+                std::unique_lock<std::mutex> map_lock(map_->map_update_mutex_);
+                auto authoritative_kf = map_->GetKeyFrame(kf_id_to_process);
+                if (authoritative_kf) {
+                    // 使用拷贝构造函数，在Map锁的保护下完成拷贝
+                    kf_copy = std::make_shared<Frame>(*authoritative_kf);
+                    authoritative_kf_ptr = authoritative_kf; // 保存原始指针
+                }
+            } // Map锁在这里立即释放
+
+            // 3. 【处理】阶段：在没有任何锁的情况下，对这个安全的副本进行操作
+            if (kf_copy && authoritative_kf_ptr) {
+                // 使用副本的图像和特征点来计算描述子
+                cv::Mat computed_descriptors;
+                std::vector<cv::KeyPoint> keypoints;
+                for(const auto& feat : kf_copy->features_left_) {
+                    if(feat) keypoints.push_back(feat->position_);
+                }
+
+                if (!kf_copy->left_img_.empty() && !keypoints.empty()) {
+                    cv::Ptr<cv::ORB> orb = cv::ORB::create(300, 1.2, 8);
+                    orb->compute(kf_copy->left_img_, keypoints, computed_descriptors);
+                    kf_copy->SetDescriptors(computed_descriptors); // 更新副本的描述子
+                }
+
+                // 4. 【锁-写回-解锁】阶段
+                if (!computed_descriptors.empty()) {
+                    std::unique_lock<std::mutex> map_lock(map_->map_update_mutex_);
+                    // 再次获取权威指针以防万一，然后写入
+                    auto kf_to_update = map_->GetKeyFrame(kf_copy->keyframe_id_);
+                    if (kf_to_update) {
+                        kf_to_update->SetDescriptors(computed_descriptors);
+                        std::cout << "Loopclosing: 更新关键帧 ID: " << kf_to_update->id_ << " 的描述子。" << std::endl;
+                    }
+                }
+                
+                // 5. 后续操作使用从Map中获取的权威指针
+                key_frame_database_[authoritative_kf_ptr->id_] = authoritative_kf_ptr;
                 if (key_frame_database_.size() > min_db_size_) {
+                    current_kf_ = authoritative_kf_ptr;
                     DetectLoop();
                 }     
             }
@@ -148,43 +193,43 @@ namespace myslam{
 
         // if (curr_id >= debug_start_id && curr_id <= debug_end_id)
         // {
-        // if(good_matches.size() > 15) {
-        //     std::cout << "--- DEBUG VISUALIZATION TRIGGERED ---" << std::endl;
-        //     std::cout << "Current KF ID: " << curr_id << ", Candidate KF ID: " << candidate_id << std::endl;
+        if(good_matches.size() > 20) {
+            std::cout << "--- DEBUG VISUALIZATION TRIGGERED ---" << std::endl;
+            std::cout << "Current KF ID: " << curr_id << ", Candidate KF ID: " << candidate_id << std::endl;
 
-        //     if (!good_matches.empty()) {
-        //         std::vector<cv::KeyPoint> kps_curr, kps_cand;
-        //         for(const auto& feat : curr_kf->features_left_) kps_curr.push_back(feat->position_);
-        //         for(const auto& feat : candidate_kf->features_left_) kps_cand.push_back(feat->position_);
+            if (!good_matches.empty()) {
+                std::vector<cv::KeyPoint> kps_curr, kps_cand;
+                for(const auto& feat : curr_kf->features_left_) kps_curr.push_back(feat->position_);
+                for(const auto& feat : candidate_kf->features_left_) kps_cand.push_back(feat->position_);
                 
-        //         cv::Mat img_good_matches;
-        //         cv::drawMatches(curr_kf->left_img_, kps_curr, candidate_kf->left_img_, kps_cand, good_matches, img_good_matches);
+                cv::Mat img_good_matches;
+                cv::drawMatches(curr_kf->left_img_, kps_curr, candidate_kf->left_img_, kps_cand, good_matches, img_good_matches);
 
-        //         // 在图像上添加调试信息
-        //         std::string text_curr = "Current KF ID: " + std::to_string(curr_id);
-        //         std::string text_cand = "Candidate KF ID: " + std::to_string(candidate_id);
-        //         std::string text_matches = "Good Matches: " + std::to_string(good_matches.size());
+                // 在图像上添加调试信息
+                std::string text_curr = "Current KF ID: " + std::to_string(curr_id);
+                std::string text_cand = "Candidate KF ID: " + std::to_string(candidate_id);
+                std::string text_matches = "Good Matches: " + std::to_string(good_matches.size());
                 
-        //         int font_face = cv::FONT_HERSHEY_SIMPLEX;
-        //         double font_scale = 0.8;
-        //         int thickness = 2;
-        //         cv::Scalar color(0, 255, 0);
+                int font_face = cv::FONT_HERSHEY_SIMPLEX;
+                double font_scale = 0.8;
+                int thickness = 2;
+                cv::Scalar color(0, 255, 0);
 
-        //         cv::putText(img_good_matches, text_curr, cv::Point(10, 30), font_face, font_scale, color, thickness);
-        //         cv::putText(img_good_matches, text_cand, cv::Point(curr_kf->left_img_.cols + 10, 30), font_face, font_scale, color, thickness);
-        //         cv::putText(img_good_matches, text_matches, cv::Point(10, 60), font_face, font_scale, color, thickness);
+                cv::putText(img_good_matches, text_curr, cv::Point(10, 30), font_face, font_scale, color, thickness);
+                cv::putText(img_good_matches, text_cand, cv::Point(curr_kf->left_img_.cols + 10, 30), font_face, font_scale, color, thickness);
+                cv::putText(img_good_matches, text_matches, cv::Point(10, 60), font_face, font_scale, color, thickness);
 
-        //         cv::imshow("Debug Loop Matches", img_good_matches);
-        //         cv::waitKey(0); // 使用waitKey(0)来阻塞线程，等待用户按键
-        //     } else {
-        //         std::cout << "No good matches to display." << std::endl;
-        //     }
-        // }
+                cv::imshow("Debug Loop Matches", img_good_matches);
+                cv::waitKey(1); // 使用waitKey(0)来阻塞线程，等待用户按键
+            } else {
+                std::cout << "No good matches to display." << std::endl;
+            }
+        }
         // }
         // --- 可视化代码结束 ---
 
 
-        if (good_matches.size() < 10) {
+        if (good_matches.size() < 20) {
             std::cout << "Ratio test后匹配点不足: " << good_matches.size() << std::endl;
             return false;
         }

@@ -35,6 +35,9 @@ namespace myslam {
 
         Frame(long id, double time_stamp, const Mat &left, const Mat &right);
 
+        // 拷贝构造函数
+        Frame(const Frame &other);
+
         // 返回位姿
         SE3 Pose() {
             std::unique_lock<std::mutex> lck(pose_mutex_);

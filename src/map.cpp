@@ -142,4 +142,15 @@ namespace myslam {
         std::unique_lock<std::mutex> lck(data_mutex_);
         return active_keyframes_;
     }
+
+    // --- [新增] GetKeyFrame 方法的实现 ---
+    Frame::Ptr Map::GetKeyFrame(unsigned long id) {
+        // 注意：这个函数本身不加锁，调用者需要在外部保证锁的存在
+        // 因为它通常在已经持有锁的上下文中被调用
+        auto it = keyframes_.find(id);
+        if (it != keyframes_.end()) {
+            return it->second;
+        }
+        return nullptr;
+    }
 }

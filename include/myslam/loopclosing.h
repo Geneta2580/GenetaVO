@@ -96,6 +96,8 @@ namespace myslam{
 
             // [任务队列，用于接收来自后端的新关键帧
             std::list<Frame::Ptr> new_keyframes_list_;
+            std::mutex new_keyframes_mutex_; // 为待处理列表增加一个专属的互斥锁
+            std::condition_variable new_kf_cv_;
 
             // 建立LoopClosing模块自己的关键帧数据库
             std::map<unsigned long, Frame::Ptr> key_frame_database_;
@@ -113,7 +115,7 @@ namespace myslam{
             int window_size_ = 500;
 
             // 相似分数阈值
-            double min_score_ = 0.02;
+            double min_score_ = 0.045;
 
             // 最小开始检测的数据库大小
             size_t min_db_size_ = 50; // 新增，避免在数据库过小的情况下进行回环检测

@@ -7,6 +7,8 @@
 #include "myslam/camera.h"
 #include "loopclosing.h"
 #include <g2o/types/slam3d/edge_se3.h> // g2o边
+#include <mutex>
+#include <condition_variable>
 
 namespace myslam {
     class Map;
@@ -35,7 +37,7 @@ namespace myslam {
         void Start();
 
         // 新增：前端用于插入新关键帧的接口
-        void InsertNewKeyFrame(Frame::Ptr kf);
+        void InsertNewKeyFrame(Frame::Ptr keyframe);
 
         // 关闭后端线程
         void Stop();
@@ -81,6 +83,8 @@ namespace myslam {
 
         // 新增：用于前后端通信的线程安全队列
         std::list<Frame::Ptr> new_keyframes_list_;
+        std::mutex new_keyframes_mutex_;
+        std::condition_variable new_kf_cv_;
     };
 
 }

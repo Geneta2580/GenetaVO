@@ -31,6 +31,8 @@ namespace myslam {
         
             Feature(std::shared_ptr<Frame> frame, const cv::KeyPoint &kp) // 参数化构造函数
                 : frame_(frame), position_(kp) {}
+
+            Feature(const Feature &other); // 拷贝构造函数声明
     };
 }
 

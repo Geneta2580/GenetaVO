@@ -36,43 +36,43 @@ namespace myslam {
         }
     }
 
-    void Backend::InsertNewKeyFrame(Frame::Ptr kf) {
-        std::unique_lock<std::mutex> lock(data_mutex_);
-        new_keyframes_list_.push_back(kf);
+    void Backend::InsertNewKeyFrame(Frame::Ptr keyframe) {
+        std::unique_lock<std::mutex> lock(new_keyframes_mutex_);
+        new_keyframes_list_.push_back(keyframe);
+        new_kf_cv_.notify_one(); // 唤醒一个正在等待的线程
     }
 
     void Backend::BackendLoop() {
         while (backend_running_.load()) {
-            bool should_optimize = false;
-            std::list<Frame::Ptr> new_kfs_to_process;
+            Frame::Ptr new_kf;
             {
-                std::unique_lock<std::mutex> lock(data_mutex_);
-                if (!new_keyframes_list_.empty()) {
-                    // 将新关键帧移动到局部变量，以尽快释放锁
-                    new_kfs_to_process.swap(new_keyframes_list_);
-                    should_optimize = true;
-                    new_keyframes_list_.clear(); // 清空任务队列，表示我们已经收到了信号
-                }
-            }
+                std::unique_lock<std::mutex> lock(new_keyframes_mutex_);
+                // 使用条件变量等待，直到列表不为空或后端停止运行
+                new_kf_cv_.wait(lock, [this] {
+                    return !new_keyframes_list_.empty() || !backend_running_.load();
+                });
 
-            if (should_optimize) {
+                if (!backend_running_.load()) break;
+
+                new_kf = new_keyframes_list_.front();
+                new_keyframes_list_.pop_front();
+            } // 锁在这里自动释放
+
+            // 在锁之外进行耗时的优化操作
+            if (new_kf) {
                 // --- [修改] 减小地图锁的范围，提高并行性 ---
                 Map::KeyframesType active_kfs;
                 Map::LandmarksType active_landmarks;
                 {
                     std::unique_lock<std::mutex> map_lock(map_->map_update_mutex_);
-                    for (auto& kf : new_kfs_to_process) {
-                        map_->InsertKeyFrame(kf);
-                    }
+                    map_->InsertKeyFrame(new_kf);
                     active_kfs = map_->GetActiveKeyFrames();
                     active_landmarks = map_->GetActiveMapPoints();
                 } // 地图锁在这里释放
 
                 // 将新关键帧传递给回环检测模块 (无需地图锁)
-                for (auto& kf : new_kfs_to_process) {
-                    if (loop_) {
-                        loop_->InsertNewKeyFrame(kf);
-                    }
+                if (loop_) {
+                    loop_->InsertNewKeyFrame(new_kf);
                 }
 
                 // 执行优化 (无需地图锁，Optimize函数内部会自行加锁)
@@ -88,6 +88,25 @@ namespace myslam {
 
     void Backend::Optimize(Map::KeyframesType &keyframes,
                            Map::LandmarksType &landmarks) {
+        
+        // --- [日志输出] ---
+        // for (auto& kf_pair : keyframes) {
+        //     auto kf = kf_pair.second;
+        //     if (kf) {
+        //         size_t num_features = kf->features_left_.size();
+        //         size_t num_3d_points = 0;
+        //         for (const auto& feat : kf->features_left_) {
+        //             if (feat && feat->map_point_.lock()) {
+        //                 num_3d_points++;
+        //             }
+        //         }
+        //         std::cout << "[Backend] Optimize KF " << kf->id_ 
+        //                   << ": Features=" << num_features 
+        //                   << ", 3D Points=" << num_3d_points << std::endl;
+        //     }
+        // }
+        // --- [日志输出结束] ---
+
         // setup g2o
         typedef g2o::BlockSolver_6_3 BlockSolverType;
         typedef g2o::LinearSolverCSparse<BlockSolverType::PoseMatrixType> LinearSolverType; // 必须使用稀疏求解器
@@ -117,7 +136,7 @@ namespace myslam {
             vertices.insert({kf->keyframe_id_, vertex_pose});
         }
 
-        // --- 关键修改：固定滑动窗口中最老的一帧 ---
+        // --- 关键修改：固定滑动窗口中最老的一帧？ ---
         if (vertices.count(min_kf_id)) {
             vertices.at(min_kf_id)->setFixed(true);
         }
@@ -214,7 +233,7 @@ namespace myslam {
             if (inlier_ratio > 0.7) { // 优化良好的点的比例大于50%，直接结束优化
                 break;
             } else { // 优化良好的点的比例小于50%，调整鲁棒核函数阈值 
-                chi2_th *= 2;
+                // chi2_th *= 2;
                 iteration++;
             }
         }
@@ -233,10 +252,11 @@ namespace myslam {
                     if (mappoint->GetObs().empty()) { 
                         mappoint->is_outlier_ = true;
                         map_->AddOutlierMapPoint(mappoint->id_);
+                        ef.second->map_point_.reset(); // 断开与地图点的关联
+
                         // std::cout << "running" << std::endl;
                     }
                 }
-                ef.second->map_point_.reset(); // 断开与地图点的关联
             } else {
                 ef.second->is_outlier_ = false;
             }
@@ -251,8 +271,8 @@ namespace myslam {
         }
 
         // 从地图中移除外点和旧的地图点
-        map_->RemoveAllOutlierMapPoints();
-        map_->RemoveOldActiveMapPoints();
+        // map_->RemoveAllOutlierMapPoints();
+        // map_->RemoveOldActiveMapPoints();
     }
     
 }

@@ -50,6 +50,9 @@ namespace myslam {
 
             /// 清理map中活跃观测数量为零的点
             void RemoveOldActiveMapPoints();
+
+            // --- [新增] 添加一个线程安全的方法来获取单个关键帧 ---
+            Frame::Ptr GetKeyFrame(unsigned long id);
 			
         private:
             void InsertActiveMapPoint(MapPoint::Ptr map_point);

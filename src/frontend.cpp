@@ -106,12 +106,12 @@ namespace myslam {
         }
 
         // 对图像进行直方图均衡化增强，提升特征点检测效果
-        cv::Mat enhanced_img;
-        cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(6.0, cv::Size(4, 4)); // 将图像分割为4x4的小块，每个小块内都进行直方图均衡化(阈值为6，越大对比度越强，噪声影响越大)
-        clahe->apply(current_frame_->left_img_, enhanced_img);
+        // cv::Mat enhanced_img;
+        // cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(6.0, cv::Size(4, 4)); // 将图像分割为4x4的小块，每个小块内都进行直方图均衡化(阈值为6，越大对比度越强，噪声影响越大)
+        // clahe->apply(current_frame_->left_img_, enhanced_img);
 
         std::vector<cv::KeyPoint> all_keypoints;
-        this->orb_->detect(enhanced_img, all_keypoints, mask);
+        this->orb_->detect(current_frame_->left_img_, all_keypoints, mask);
 
         // gftt->detect(current_frame_->left_img_, keypoints); // 将提取到的特征点注入到对应帧的类参数当中去
         // fast->detect(current_frame_->left_img_, keypoints); // FAST
@@ -148,11 +148,6 @@ namespace myslam {
             }
         }
         // --- 网格化筛选结束 ---
-
-        // 筛选后的均匀化关键点计算描述子
-        // cv::Mat descriptors; // ORB
-        // this->orb_->compute(enhanced_img, final_keypoints, descriptors); // ORB
-        // current_frame_->SetDescriptors(descriptors); // 将ORB特征描述子进行传递
         
         int cnt_detected = 0;
         for(auto &kp: final_keypoints){
@@ -358,9 +353,9 @@ namespace myslam {
                 MapPoint::Ptr mp = feat->map_point_.lock();
                 if (mp ) { // && (current_frame_->id_ - reference_frame_->id_ <= 2)
                     mp->is_outlier_ = true;
-                    map_->AddOutlierMapPoint(mp->id_);
+                    // map_->AddOutlierMapPoint(mp->id_);
                 }
-                feat->map_point_.reset(); // 断开与地图点的关联
+                // feat->map_point_.reset(); // 断开与地图点的关联
                 feat->is_outlier_ = false;  // 重置标记
             }
         }
@@ -489,23 +484,7 @@ namespace myslam {
 
         if (status_ == FrontendStatus::TRACKING_BAD) {
             // 状态糟糕，需要检测新特征点来补充
-            // 1. DetectLeftFeatures() 会向 current_frame_->features_left_ 中追加新的特征点
             DetectLeftFeatures(); 
-            
-            // --- [关键修正：统一计算描述子] ---
-            // a. 收集当前帧所有的特征点位置
-            std::vector<cv::KeyPoint> all_keypoints;
-            for(const auto& feat : current_frame_->features_left_) {
-                if(feat) { // 确保特征点有效
-                    all_keypoints.push_back(feat->position_);
-                }
-            }
-
-            cv::Mat all_descriptors;
-            this->orb_->compute(current_frame_->left_img_, all_keypoints, all_descriptors);
-            current_frame_->SetDescriptors(all_descriptors);
-
-            // 后续流程不变
             FindRightFeatures();
             Triangulation();
             InsertKeyFrame();
@@ -539,15 +518,34 @@ namespace myslam {
     }
 
     void Frontend::InsertKeyFrame() {
-        
+        // --- [关键修正] 在插入前，统一计算描述子，确保数据完整性 ---
+        // 1. 收集当前帧所有的左图特征点
+        std::vector<cv::KeyPoint> all_keypoints;
+        for(const auto& feat : current_frame_->features_left_) {
+            if(feat) { // 确保特征点有效
+                all_keypoints.push_back(feat->position_);
+            }
+        }
+
+        // // --- [日志输出] ---
+        // size_t num_features = current_frame_->features_left_.size();
+        // size_t num_3d_points = 0;
+        // for (const auto& feat : current_frame_->features_left_) {
+        //     if (feat && feat->map_point_.lock()) {
+        //         num_3d_points++;
+        //     }
+        // }
+        // std::cout << "[Frontend] Insert KF " << current_frame_->id_ 
+        //           << ": Features=" << num_features 
+        //           << ", 3D Points=" << num_3d_points << std::endl;
+        // // --- [日志输出结束] ---
+
         current_frame_->SetKeyFrame();
         
-        // 关键：计算并设置新关键帧的绝对位姿
         if (reference_frame_) {
             current_frame_->SetPose(current_frame_->RelativePose() * reference_frame_->Pose());
         }
         
-        // --- 而是将其放入后端的处理队列中 ---
         backend_->InsertNewKeyFrame(current_frame_);
 
         if (viewer_) {
@@ -555,7 +553,6 @@ namespace myslam {
         }
 
         reference_frame_ = current_frame_;
-        // 新的参考帧，其相对位姿是单位矩阵
         current_frame_->SetRelativePose(SE3());
     }
 
