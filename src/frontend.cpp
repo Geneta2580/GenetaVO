@@ -505,9 +505,9 @@ namespace myslam {
             ReTrack();
         } else { // TRACKING_GOOD
             // 追踪良好，根据运动量判断是否插入关键帧
-            if (relative_motion_.log().norm() > 0.05) { // 阈值可调
-                InsertKeyFrame();
-            }
+            // if (relative_motion_.log().norm() > 0.05) { // 阈值可调
+            //     InsertKeyFrame();
+            // }
         }
 
         return num_track_good_;

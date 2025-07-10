@@ -130,6 +130,7 @@ namespace myslam{
         // 1. 特征匹配
         cv::BFMatcher matcher(cv::NORM_HAMMING);
         std::vector<std::vector<cv::DMatch>> knn_matches;
+        // --- [修正] 将当前帧的描述子与候选帧的描述子进行匹配 ---
         matcher.knnMatch(curr_kf->descriptors_, candidate_kf->descriptors_, knn_matches, 2);
 
         // 2. 使用 Lowe's ratio test 筛选初始匹配
@@ -147,36 +148,38 @@ namespace myslam{
 
         // if (curr_id >= debug_start_id && curr_id <= debug_end_id)
         // {
-            std::cout << "--- DEBUG VISUALIZATION TRIGGERED ---" << std::endl;
-            std::cout << "Current KF ID: " << curr_id << ", Candidate KF ID: " << candidate_id << std::endl;
+        // if(good_matches.size() > 20) {
+        //     std::cout << "--- DEBUG VISUALIZATION TRIGGERED ---" << std::endl;
+        //     std::cout << "Current KF ID: " << curr_id << ", Candidate KF ID: " << candidate_id << std::endl;
 
-            if (!good_matches.empty()) {
-                std::vector<cv::KeyPoint> kps_curr, kps_cand;
-                for(const auto& feat : curr_kf->features_left_) kps_curr.push_back(feat->position_);
-                for(const auto& feat : candidate_kf->features_left_) kps_cand.push_back(feat->position_);
+        //     if (!good_matches.empty()) {
+        //         std::vector<cv::KeyPoint> kps_curr, kps_cand;
+        //         for(const auto& feat : curr_kf->features_left_) kps_curr.push_back(feat->position_);
+        //         for(const auto& feat : candidate_kf->features_left_) kps_cand.push_back(feat->position_);
                 
-                cv::Mat img_good_matches;
-                cv::drawMatches(curr_kf->left_img_, kps_curr, candidate_kf->left_img_, kps_cand, good_matches, img_good_matches);
+        //         cv::Mat img_good_matches;
+        //         cv::drawMatches(curr_kf->left_img_, kps_curr, candidate_kf->left_img_, kps_cand, good_matches, img_good_matches);
 
-                // 在图像上添加调试信息
-                std::string text_curr = "Current KF ID: " + std::to_string(curr_id);
-                std::string text_cand = "Candidate KF ID: " + std::to_string(candidate_id);
-                std::string text_matches = "Good Matches: " + std::to_string(good_matches.size());
+        //         // 在图像上添加调试信息
+        //         std::string text_curr = "Current KF ID: " + std::to_string(curr_id);
+        //         std::string text_cand = "Candidate KF ID: " + std::to_string(candidate_id);
+        //         std::string text_matches = "Good Matches: " + std::to_string(good_matches.size());
                 
-                int font_face = cv::FONT_HERSHEY_SIMPLEX;
-                double font_scale = 0.8;
-                int thickness = 2;
-                cv::Scalar color(0, 255, 0);
+        //         int font_face = cv::FONT_HERSHEY_SIMPLEX;
+        //         double font_scale = 0.8;
+        //         int thickness = 2;
+        //         cv::Scalar color(0, 255, 0);
 
-                cv::putText(img_good_matches, text_curr, cv::Point(10, 30), font_face, font_scale, color, thickness);
-                cv::putText(img_good_matches, text_cand, cv::Point(curr_kf->left_img_.cols + 10, 30), font_face, font_scale, color, thickness);
-                cv::putText(img_good_matches, text_matches, cv::Point(10, 60), font_face, font_scale, color, thickness);
+        //         cv::putText(img_good_matches, text_curr, cv::Point(10, 30), font_face, font_scale, color, thickness);
+        //         cv::putText(img_good_matches, text_cand, cv::Point(curr_kf->left_img_.cols + 10, 30), font_face, font_scale, color, thickness);
+        //         cv::putText(img_good_matches, text_matches, cv::Point(10, 60), font_face, font_scale, color, thickness);
 
-                cv::imshow("Debug Loop Matches", img_good_matches);
-                cv::waitKey(1); // 使用waitKey(0)来阻塞线程，等待用户按键
-            } else {
-                std::cout << "No good matches to display." << std::endl;
-            }
+        //         cv::imshow("Debug Loop Matches", img_good_matches);
+        //         cv::waitKey(0); // 使用waitKey(0)来阻塞线程，等待用户按键
+        //     } else {
+        //         std::cout << "No good matches to display." << std::endl;
+        //     }
+        // }
         // }
         // --- 可视化代码结束 ---
 
