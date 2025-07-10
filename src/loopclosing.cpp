@@ -28,9 +28,6 @@ namespace myslam{
 
     void Loopclosing::Loop() {
         while (loop_running_.load()) {
-            unsigned long kf_id_to_process; // 我们只需要ID
-            
-            // 1. 从队列中获取任务ID
             {
                 std::unique_lock<std::mutex> lock(new_keyframes_mutex_);
                 new_kf_cv_.wait(lock, [this] {
@@ -39,55 +36,38 @@ namespace myslam{
 
                 if (!loop_running_.load()) break;
 
-                // 只获取ID，然后立即释放队列锁
-                kf_id_to_process = new_keyframes_list_.front()->keyframe_id_;
+                current_kf_ = new_keyframes_list_.front();
                 new_keyframes_list_.pop_front();
+            } // 锁在这里自动释放
 
-            } // 队列锁在这里被快速释放，前端不会被阻塞
-
-            // 2. 【锁-复制-解锁】阶段，只使用Map锁
-            Frame::Ptr kf_copy;
-            Frame::Ptr authoritative_kf_ptr; // 用于后续操作的原始指针
-            {
-                std::unique_lock<std::mutex> map_lock(map_->map_update_mutex_);
-                auto authoritative_kf = map_->GetKeyFrame(kf_id_to_process);
-                if (authoritative_kf) {
-                    // 使用拷贝构造函数，在Map锁的保护下完成拷贝
-                    kf_copy = std::make_shared<Frame>(*authoritative_kf);
-                    authoritative_kf_ptr = authoritative_kf; // 保存原始指针
-                }
-            } // Map锁在这里立即释放
-
-            // 3. 【处理】阶段：在没有任何锁的情况下，对这个安全的副本进行操作
-            if (kf_copy && authoritative_kf_ptr) {
-                // 使用副本的图像和特征点来计算描述子
-                cv::Mat computed_descriptors;
-                std::vector<cv::KeyPoint> keypoints;
-                for(const auto& feat : kf_copy->features_left_) {
-                    if(feat) keypoints.push_back(feat->position_);
-                }
-
-                if (!kf_copy->left_img_.empty() && !keypoints.empty()) {
-                    cv::Ptr<cv::ORB> orb = cv::ORB::create(300, 1.2, 8);
-                    orb->compute(kf_copy->left_img_, keypoints, computed_descriptors);
-                    kf_copy->SetDescriptors(computed_descriptors); // 更新副本的描述子
-                }
-
-                // 4. 【锁-写回-解锁】阶段
-                if (!computed_descriptors.empty()) {
-                    std::unique_lock<std::mutex> map_lock(map_->map_update_mutex_);
-                    // 再次获取权威指针以防万一，然后写入
-                    auto kf_to_update = map_->GetKeyFrame(kf_copy->keyframe_id_);
-                    if (kf_to_update) {
-                        kf_to_update->SetDescriptors(computed_descriptors);
-                        std::cout << "Loopclosing: 更新关键帧 ID: " << kf_to_update->id_ << " 的描述子。" << std::endl;
-                    }
-                }
+            if (current_kf_) {
+                // --- [实验性修改] 在回环线程中强制重新计算描述子 ---
+                std::cout << "[LoopClosing] DEBUG: Forcibly re-computing descriptors for KF " << current_kf_->id_ << std::endl;
                 
-                // 5. 后续操作使用从Map中获取的权威指针
-                key_frame_database_[authoritative_kf_ptr->id_] = authoritative_kf_ptr;
+                // 1. 收集当前帧所有的左图特征点位置
+                std::vector<cv::KeyPoint> all_keypoints;
+                for(const auto& feat : current_kf_->features_left_) {
+                    if(feat) all_keypoints.push_back(feat->position_);
+                }
+
+                // 2. 确保图像数据存在
+                if (!current_kf_->left_img_.empty() && !all_keypoints.empty()) {
+                    // 3. 创建一个临时的ORB对象
+                    cv::Ptr<cv::ORB> orb = cv::ORB::create(300, 1.2, 8); // 参数可以与前端保持一致
+
+                    cv::Mat all_descriptors;
+                    orb->compute(current_kf_->left_img_, all_keypoints, all_descriptors);
+
+                    current_kf_->SetDescriptors(all_descriptors);
+                    std::cout << "[LoopClosing] DEBUG: Re-computation done. New descriptor matrix size: " << all_descriptors.rows << std::endl;
+                } else {
+                    std::cout << "[LoopClosing] DEBUG: Cannot re-compute. Image or keypoints empty for KF " << current_kf_->id_ << std::endl;
+                }
+                // --- [实验性修改结束] ---
+
+                key_frame_database_[current_kf_->id_] = current_kf_;
+
                 if (key_frame_database_.size() > min_db_size_) {
-                    current_kf_ = authoritative_kf_ptr;
                     DetectLoop();
                 }     
             }
