@@ -112,6 +112,8 @@ namespace myslam {
             int num_track_good_ = 0;
 
             int num_features_init_ = 100;
+
+            cv::Ptr<cv::ORB> orb_ = cv::ORB::create(num_features_*4, 1.2, 8);
     };
 }
 #endif

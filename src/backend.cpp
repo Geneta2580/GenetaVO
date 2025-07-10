@@ -148,15 +148,15 @@ namespace myslam {
                 v->setMarginalized(true); 
                 
                 // --- 关键修改：移除固定边缘地图点的逻辑 ---
-                if (!observations.empty()) {
-                    auto feat = observations.front().lock();
-                    if (feat) {
-                        auto frame = feat->frame_.lock();
-                        if (frame && keyframes.find(frame->keyframe_id_) == keyframes.end()) {
-                            v->setFixed(true);
-                        }
-                    }
-                }
+                // if (!observations.empty()) {
+                //     auto feat = observations.front().lock();
+                //     if (feat) {
+                //         auto frame = feat->frame_.lock();
+                //         if (frame && keyframes.find(frame->keyframe_id_) == keyframes.end()) {
+                //             v->setFixed(true);
+                //         }
+                //     }
+                // }
 
                 vertices_landmarks.insert({landmark_id, v});
                 optimizer.addVertex(v);
@@ -214,7 +214,7 @@ namespace myslam {
             if (inlier_ratio > 0.7) { // 优化良好的点的比例大于50%，直接结束优化
                 break;
             } else { // 优化良好的点的比例小于50%，调整鲁棒核函数阈值 
-                // chi2_th *= 2;
+                chi2_th *= 2;
                 iteration++;
             }
         }

@@ -109,7 +109,7 @@ namespace myslam{
         if (frame->descriptors_.empty()) {
             return;
         }
-        db_.query(frame->descriptors_, results, 4); // 返回前4个候选
+        db_.query(frame->descriptors_, results, 10); // 返回前4个候选
     }
 
     Loopclosing::LoopIDType Loopclosing::GetAllLoopIDs() {
@@ -134,10 +134,10 @@ namespace myslam{
         matcher.knnMatch(curr_kf->descriptors_, candidate_kf->descriptors_, knn_matches, 2);
 
         // 2. 使用 Lowe's ratio test 筛选初始匹配
-        const float ratio_thresh = 0.85f;
+        const float ratio_thresh = 0.7f;
         std::vector<cv::DMatch> good_matches;
         for (size_t i = 0; i < knn_matches.size(); i++) {
-            if (knn_matches[i].size() > 1 && knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance) {
+            if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance) {
                 good_matches.push_back(knn_matches[i][0]);
             }
         }
@@ -148,7 +148,7 @@ namespace myslam{
 
         // if (curr_id >= debug_start_id && curr_id <= debug_end_id)
         // {
-        // if(good_matches.size() > 20) {
+        // if(good_matches.size() > 15) {
         //     std::cout << "--- DEBUG VISUALIZATION TRIGGERED ---" << std::endl;
         //     std::cout << "Current KF ID: " << curr_id << ", Candidate KF ID: " << candidate_id << std::endl;
 

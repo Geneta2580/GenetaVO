@@ -96,9 +96,6 @@ namespace myslam {
         // cv::Ptr<cv::FastFeatureDetector> fast = cv::FastFeatureDetector::create(80); 
         // fast->setNonmaxSuppression(true);
 
-        // 这个是ORB检测
-        cv::Ptr<cv::ORB> orb = cv::ORB::create(num_features_*4, 1.2, 8);
-
         // --- 为保证BAD新检测的特征点不与之前的重合，增加掩膜 ---
         cv::Mat mask(current_frame_->left_img_.size(), CV_8UC1, 255);
         for (auto &feat : current_frame_->features_left_) {
@@ -114,7 +111,7 @@ namespace myslam {
         clahe->apply(current_frame_->left_img_, enhanced_img);
 
         std::vector<cv::KeyPoint> all_keypoints;
-        orb->detect(enhanced_img, all_keypoints, mask);
+        this->orb_->detect(enhanced_img, all_keypoints, mask);
 
         // gftt->detect(current_frame_->left_img_, keypoints); // 将提取到的特征点注入到对应帧的类参数当中去
         // fast->detect(current_frame_->left_img_, keypoints); // FAST
@@ -153,9 +150,9 @@ namespace myslam {
         // --- 网格化筛选结束 ---
 
         // 筛选后的均匀化关键点计算描述子
-        cv::Mat descriptors; // ORB
-        orb->compute(current_frame_->left_img_, final_keypoints, descriptors); // ORB
-        current_frame_->SetDescriptors(descriptors); // 将ORB特征描述子进行传递
+        // cv::Mat descriptors; // ORB
+        // this->orb_->compute(enhanced_img, final_keypoints, descriptors); // ORB
+        // current_frame_->SetDescriptors(descriptors); // 将ORB特征描述子进行传递
         
         int cnt_detected = 0;
         for(auto &kp: final_keypoints){
@@ -317,15 +314,6 @@ namespace myslam {
             return 0;
         }
 
-        // // 添加顶点和重投影误差边
-        // if (last_frame_) {
-        //     VertexPose* last_vertex_pose = new VertexPose();
-        //     last_vertex_pose->setId(1); // 新的顶点
-        //     last_vertex_pose->setEstimate(last_frame_->Pose());
-        //     last_vertex_pose->setFixed(true); // 固定上一帧的位姿
-        //     optimizer.addVertex(last_vertex_pose);
-        // }
-
         // 开始进行位姿的BA优化
         const double chi2_th = 5.991;
         int cnt_outlier = 0;
@@ -368,7 +356,7 @@ namespace myslam {
         for (auto &feat : features) {
             if (feat->is_outlier_) {
                 MapPoint::Ptr mp = feat->map_point_.lock();
-                if (mp && current_frame_->id_ - reference_frame_->id_ <= 2) {
+                if (mp ) { // && (current_frame_->id_ - reference_frame_->id_ <= 2)
                     mp->is_outlier_ = true;
                     map_->AddOutlierMapPoint(mp->id_);
                 }
@@ -402,19 +390,24 @@ namespace myslam {
 
             Vec3 pt_world = Vec3::Zero();
 
-            if (triangulation(poses, points, pt_world) && pt_world[2] > 0) { // 进行三角化，同时判断三角化后三维点数值的有效性
+            if (triangulation(poses, points, pt_world) && pt_world[2] > 0) {
                 auto new_map_point = MapPoint::CreateNewMappoint();
-                // 从相机坐标系转换到世界坐标系
                 pt_world = current_pose_Twc * pt_world;
-                new_map_point->SetPos(pt_world);     // 设置地图点
+                new_map_point->SetPos(pt_world);
 
-                map_->InsertMapPoint(new_map_point); // 将地图点插入地图
-                viewer_->InsertNewMapPoint(new_map_point); // 将地图点插入可视化界面
-
-                current_frame_->features_left_[i]->map_point_ = new_map_point; // 地图点和左右图像特征点匹配
+                // 1. 地图点记录观测到它的特征点
+                new_map_point->AddObservation(current_frame_->features_left_[i]);
+                new_map_point->AddObservation(current_frame_->features_right_[i]);
+                
+                // 2. 特征点记录它观测到的地图点 (这部分您已经做了)
+                current_frame_->features_left_[i]->map_point_ = new_map_point;
                 current_frame_->features_right_[i]->map_point_ = new_map_point;
+                // --- [修正结束] ---
 
-                cnt_triangulated_pts++; // 三角化成功
+                map_->InsertMapPoint(new_map_point);
+                viewer_->InsertNewMapPoint(new_map_point);
+
+                cnt_triangulated_pts++;
             }
 
         }
@@ -495,11 +488,28 @@ namespace myslam {
         // 注意，在BAD之前更新
 
         if (status_ == FrontendStatus::TRACKING_BAD) {
-            // “补充”策略：不清除现有特征点，而是检测新的来补充
-            DetectLeftFeatures();
+            // 状态糟糕，需要检测新特征点来补充
+            // 1. DetectLeftFeatures() 会向 current_frame_->features_left_ 中追加新的特征点
+            DetectLeftFeatures(); 
+            
+            // --- [关键修正：统一计算描述子] ---
+            // a. 收集当前帧所有的特征点位置
+            std::vector<cv::KeyPoint> all_keypoints;
+            for(const auto& feat : current_frame_->features_left_) {
+                if(feat) { // 确保特征点有效
+                    all_keypoints.push_back(feat->position_);
+                }
+            }
+
+            cv::Mat all_descriptors;
+            this->orb_->compute(current_frame_->left_img_, all_keypoints, all_descriptors);
+            current_frame_->SetDescriptors(all_descriptors);
+
+            // 后续流程不变
             FindRightFeatures();
             Triangulation();
             InsertKeyFrame();
+
         } else if (status_ == FrontendStatus::LOST) {
             // “重置”策略
             ReTrack();
